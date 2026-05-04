@@ -53,12 +53,21 @@ public/preload/
 - **存储**：`utools.dbStorage` (key-value)，key 为 `preferredModel`
 - **渲染**：自定义 markdown 解析器，支持 3 层嵌套列表
 
+## 分支规则（红线）
+
+- **禁止直接提交到 main 分支**，所有修改必须通过 PR 合并
+- 新功能：`feat/<功能名>` 分支（如 `feat/mcp-tools`）
+- Bug 修复：`bug/<问题描述>` 分支（如 `bug/settings-alignment`）
+- 合并前需至少 1 人 review approve（GitHub 分支保护已开启）
+- 合并后删除源分支，保持仓库整洁
+
 ## 约定
 
 - 新增功能模块遵循 `src/<module>/index.js + index.test.js` 模式
 - 模块接口简洁，可 mock 外部依赖独立测试
 - 测试原则：只测外部行为，不测实现细节
 - CSS 按组件独立编写，暗色模式用 `@media (prefers-color-scheme: dark)` 覆盖
+- 版本发布说明记录在 `releases/vX.Y.Z.md`，插件介绍在 `releases/plugin-intro.md`
 
 ## Agent skills
 
