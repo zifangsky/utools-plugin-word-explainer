@@ -1,6 +1,6 @@
 # 英语单词详解 uTools 插件
 
-在 uTools 平台中运行的英语单词详解插件。输入英文单词后，通过 uTools AI API 生成包含音标、词义解析、词性用法、语境应用、常见搭配、词源故事、记忆技巧、同义词辨析 7 个板块的结构化详解。
+在 uTools 平台中运行的英语单词详解插件。输入英文单词后，通过 uTools AI API 生成包含音标、词义解析、词性用法、语境应用、常见搭配、词源故事、记忆技巧、同义词辨析 7 个板块的结构化详解。同时以 MCP 工具形式对外暴露查词能力，供外部 AI Agent 调用。
 
 ## 触发方式
 
@@ -40,12 +40,15 @@ src/
 ├── prompt-template/            # 7 板块提示词模板
 ├── ai-call/                    # AI 调用封装（流式）
 ├── markdown-view/              # Markdown 富文本渲染
-└── model-preference/           # 模型偏好持久化
+├── model-preference/           # 模型偏好持久化
+├── use-word-query/             # 查询状态机 Hook
+└── mcp-tools/                  # MCP 工具 handler
 ```
 
 ## 技术栈
 
 - React 19 + Vite 6
-- Vitest 4 + Testing Library (45 个测试)
+- Vitest 4 + Testing Library (58 个测试)
 - uTools AI API（流式调用）
 - uTools dbStorage（偏好持久化）
+- uTools MCP Tools（registerTool）

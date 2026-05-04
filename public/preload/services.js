@@ -22,3 +22,5 @@ window.services = {
     return filePath
   }
 }
+
+require('./tools.js')
