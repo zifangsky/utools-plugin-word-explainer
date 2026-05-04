@@ -50,6 +50,7 @@
   color: #555;
 }
 
+
 .back-btn:hover {
   background: #e0e0e0;
   border-color: #999;
@@ -58,7 +59,8 @@
 .search-bar {
   display: flex;
   gap: 8px;
-  margin-bottom: 16px;
+  width: 70%;
+  margin: 0 auto 16px auto;
   flex-shrink: 0;
 }
 
@@ -202,6 +204,13 @@
 
 .settings-panel {
   padding: 8px 0;
+  width: 70%;
+  margin: 0 auto;
+}
+
+.settings-title {
+  font-size: 18px;
+  margin: 0 0 12px 0;
 }
 
 .setting-label {
@@ -213,6 +222,7 @@
 
 .model-select {
   width: 100%;
+  max-width: 360px;
   padding: 8px 12px;
   font-size: 14px;
   border: 1px solid #d9d9d9;

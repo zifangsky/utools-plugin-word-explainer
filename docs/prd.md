@@ -34,10 +34,12 @@
 |---|---|---|
 | prompt 模板 | 将单词详解格式模板（源自 word-explainer SKILL.md）转换为 AI system prompt | 是 |
 | AI 调用 | 封装 `utools.ai()`，接收 messages 数组，返回 AI 生成的 markdown 文本 | 是 |
-| 模型偏好存储 | 通过 `utools.db` 读写用户选择的模型 ID | 是 |
-| Markdown 渲染 | 将 markdown 字符串渲染为 React 富文本组件 | 是 |
-| 设置面板 | 下拉框展示可用模型列表，读取/保存用户偏好 | 需集成测试 |
-| 主界面 | 单词输入框 + 查询按钮 + 结果展示区 + 齿轮图标 | 需集成测试 |
+| 模型偏好存储 | 通过 `utools.dbStorage` 读写用户选择的模型 ID | 是 |
+| Markdown 渲染 | 将 markdown 字符串渲染为 React 富文本组件（React.memo + useMemo 优化） | 是 |
+| AI 适配器 | `createAiAdapter(client)` 工厂函数，依赖注入 client.ai | 是 |
+| 查询 Hook | `useWordQuery` Hook，封装加载/错误/结果状态机 + 流式回调拼接 | 是 |
+| 设置面板 | 下拉框展示可用模型列表，读取/保存用户偏好 | 已测试 |
+| 主界面 | 单词输入框 + 查询按钮 + 结果展示区 + 齿轮图标 | 已测试 |
 
 ### API 依赖
 
@@ -57,12 +59,14 @@
 
 ## Testing Decisions
 
-- 重点测试 **prompt 模板**、**AI 调用**、**Markdown 渲染**、**模型偏好存储** 四个深度模块 — 它们接口简单、不常变、可 mock 外部依赖。
+- 重点测试 **prompt 模板**、**AI 调用**、**Markdown 渲染**、**模型偏好存储**、**查询 Hook**、**主界面** — 模块接口简单、可 mock 外部依赖。
 - 测试原则：只测外部行为，不测实现细节。
-- prompt 模板测试：给定一个单词，验证返回的 messages 数组结构正确（role、content），system message 包含 7 板块格式要求。
-- AI 调用测试：mock `utools.ai`，验证接收的 messages 格式正确，返回的 mock 文本被正确传递。
-- Markdown 渲染测试：给定 markdown 输入，验证输出的 React 组件包含预期的分割线、加粗元素。
-- 模型偏好存储测试：mock `utools.db`，验证 setItem/getItem 的 key 和 value 正确。
+- prompt 模板测试：给定一个单词，验证返回的 messages 数组结构正确（role、content），包含 7 板块格式要求。
+- AI 调用测试：通过 `createAiAdapter` 注入 mock client，验证接收的 messages 和 model 参数正确，流式块正确回调。
+- Markdown 渲染测试：覆盖分割线、加粗、单层/嵌套/三层列表、列表中加粗、混合内容、非字符串输入。
+- 模型偏好存储测试：mock `utools.dbStorage`，验证 getItem/setItem 的 key 和 value 正确。
+- 查询 Hook 测试：mock prompt-template 和 ai-call，验证初始状态、流式内容累积、错误状态、空输入保护、model 参数传递。
+- 主界面集成测试：mock useWordQuery 和 model-preference，覆盖输入触发查询、loading 禁用按钮、结果/错误渲染、设置面板切换、模型选择持久化。
 
 ## Out of Scope
 

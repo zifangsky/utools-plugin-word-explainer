@@ -16,7 +16,7 @@
 
 - 依赖 `utools.ai()` 调用大模型生成解释内容（不依赖外部 API Key）
 - 依赖 `utools.allAiModels()` 获取可用模型列表
-- 依赖 `utools.db` 存储用户模型偏好
+- 依赖 `utools.dbStorage` 存储用户模型偏好
 - 通过 `plugin.json` 的 `features` 配置触发词和入口
 
 ## 边界

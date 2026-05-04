@@ -38,9 +38,9 @@ export default function MainPage () {
       <div className="main-page">
         <header className="main-header">
           <button className="back-btn" onClick={() => setShowSettings(false)}>← 返回</button>
-          <h1>设置</h1>
         </header>
         <div className="settings-panel">
+          <h1 className="settings-title">设置</h1>
           <label className="setting-label">AI 模型选择</label>
           <select
             className="model-select"
