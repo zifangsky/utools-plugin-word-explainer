@@ -1,15 +1,12 @@
 import { useState, useEffect } from 'react'
-import { buildMessages } from '../prompt-template/index.js'
-import { queryWordStream } from '../ai-call/index.js'
+import { useWordQuery } from '../use-word-query/index.js'
 import { MarkdownView } from '../markdown-view/index.jsx'
 import { getPreferredModel, setPreferredModel } from '../model-preference/index.js'
 import './index.css'
 
 export default function MainPage () {
   const [word, setWord] = useState('')
-  const [result, setResult] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const { loading, error, result, query } = useWordQuery()
   const [showSettings, setShowSettings] = useState(false)
   const [models, setModels] = useState([])
   const [selectedModel, setSelectedModel] = useState('')
@@ -25,28 +22,10 @@ export default function MainPage () {
     }
   }, [])
 
-  const handleQuery = async () => {
+  const handleQuery = () => {
     const trimmed = word.trim()
     if (!trimmed) return
-
-    setLoading(true)
-    setError('')
-    setResult('')
-
-    try {
-      const messages = buildMessages(trimmed)
-      const model = selectedModel || undefined
-      let fullContent = ''
-
-      await queryWordStream(messages, model, (chunk) => {
-        fullContent += chunk
-        setResult(fullContent)
-      })
-    } catch (e) {
-      setError(e.message || '查询失败，请稍后重试')
-    } finally {
-      setLoading(false)
-    }
+    query(trimmed, selectedModel || undefined)
   }
 
   const handleModelChange = (modelId) => {

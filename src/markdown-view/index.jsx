@@ -1,3 +1,5 @@
+import { memo, useMemo } from 'react'
+
 function renderInline (text) {
   const parts = text.split(/(\*\*[^*]+\*\*)/g)
   return parts.map((part, j) => {
@@ -97,28 +99,29 @@ function parseBlocks (text) {
   return blocks
 }
 
-export function MarkdownView ({ content }) {
+export const MarkdownView = memo(function MarkdownView ({ content }) {
   const text = typeof content === 'string' ? content : ''
-  const blocks = parseBlocks(text)
 
-  const elements = blocks.map((block, idx) => {
-    switch (block.type) {
-      case 'hr':
-        return <hr key={idx} className="md-hr" />
+  const elements = useMemo(() => {
+    const blocks = parseBlocks(text)
+    return blocks.map((block, idx) => {
+      switch (block.type) {
+        case 'hr':
+          return <hr key={idx} className="md-hr" />
 
-      case 'list':
-        return <div key={idx} className="md-list-wrapper">{renderListBlock(block.items)}</div>
+        case 'list':
+          return <div key={idx} className="md-list-wrapper">{renderListBlock(block.items)}</div>
 
-      case 'paragraph': {
-        const paraText = block.lines.join('\n')
-        // 如果段落以 ** 开头（如板块标题），不包在 <p> 里，允许作为行内块
-        return <p key={idx} className="md-paragraph">{renderInline(paraText)}</p>
+        case 'paragraph': {
+          const paraText = block.lines.join('\n')
+          return <p key={idx} className="md-paragraph">{renderInline(paraText)}</p>
+        }
+
+        default:
+          return null
       }
-
-      default:
-        return null
-    }
-  })
+    })
+  }, [text])
 
   return <div className="markdown-view">{elements}</div>
-}
+})
