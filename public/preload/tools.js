@@ -52,4 +52,4 @@ function createExplainWordHandler () {
   }
 }
 
-window.utools.registerTool('word_lookup', createExplainWordHandler())
+window.utools.registerTool('explain_word', createExplainWordHandler())
