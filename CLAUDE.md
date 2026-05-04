@@ -7,7 +7,7 @@ React + Vite 工程，在 uTools 平台中运行的桌面插件。用户输入�
 ```bash
 npm run dev      # 启动开发服务器 (localhost:5173)
 npm run build    # 生产构建到 dist/
-npm test         # 运行 25 个单元测试 (vitest)
+npm test         # 运行 45 个测试 (vitest)
 ```
 
 ## 架构概述
@@ -29,12 +29,15 @@ src/
 ├── markdown-view/
 │   ├── index.jsx               # 块解析器: 段落/分割线/嵌套列表 + **加粗**
 │   └── index.test.jsx
-└── model-preference/
-    ├── index.js                # getPreferredModel/setPreferredModel (dbStorage)
+├── model-preference/
+│   ├── index.js                # getPreferredModel/setPreferredModel (dbStorage)
+│   └── index.test.js
+└── use-word-query/
+    ├── index.js                # useWordQuery Hook — 查询状态机
     └── index.test.js
 ```
 
-- **依赖方向**：MainPage → 4 个功能模块 (prompt, ai-call, markdown-view, model-preference)，无循环依赖
+- **依赖方向**：MainPage → useWordQuery / markdown-view / model-preference，useWordQuery → prompt-template / ai-call，无循环依赖
 - **AI 调用**：流式模式 (`utools.ai(option, streamCallback)`)，边接收边渲染
 - **存储**：`utools.dbStorage` (key-value)，key 为 `preferredModel`
 - **渲染**：自定义 markdown 解析器，支持 3 层嵌套列表

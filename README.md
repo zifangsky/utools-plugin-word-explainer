@@ -24,7 +24,12 @@ npm test
 npm run build
 ```
 
-开发流程：启动 `npm run dev` 后，在 uTools 开发者工具中选择 `public/plugin.json`，点击"接入开发"即可加载插件。
+开发流程：
+1. 本地修改代码后，启动开发服务器 `npm run dev`
+2. 在 uTools 中打开"uTools开发者工具"插件
+3. 点击"卸载 (开发模式)"按钮（将当前工程从 uTools 开发模式卸载）
+4. 点击"安装 (开发模式)"按钮（将当前工程以开发模式重新安装到 uTools）
+5. 点击"打开"按钮（运行 `plugin.json` 配置的首个功能指令），验证实际运行效果
 
 ## 项目结构
 
@@ -41,6 +46,6 @@ src/
 ## 技术栈
 
 - React 19 + Vite 6
-- Vitest 4 + Testing Library (25 个单元测试)
+- Vitest 4 + Testing Library (45 个测试)
 - uTools AI API（流式调用）
 - uTools dbStorage（偏好持久化）
