@@ -17,9 +17,8 @@
       ]
     }
   ],
-  "tools": [
-    {
-      "name": "explain_word",
+  "tools": {
+    "explain_word": {
       "description": "查询英文单词的完整解释，返回包含音标、词义解析、词性用法、语境应用、常见搭配、词源故事、记忆技巧、同义词辨析共 7 个板块的结构化详解。",
       "inputSchema": {
         "type": "object",
@@ -32,5 +31,5 @@
         "required": ["word"]
       }
     }
-  ]
+  }
 }
