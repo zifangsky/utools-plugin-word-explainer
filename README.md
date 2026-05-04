@@ -1,2 +1,46 @@
-# utools-plugin-word-explainer
-uTools插件“应用单词解释”，当用户输入一个英文单词时，该插件将按固定格式输出该单词的详细解释，包含：音标、词义解析（含例句和中文释义）、词性用法（含派生词）、语境应用、常见搭配、词源故事、记忆技巧、同义词辨析。
+# 英语单词详解 uTools 插件
+
+在 uTools 平台中运行的英语单词详解插件。输入英文单词后，通过 uTools AI API 生成包含音标、词义解析、词性用法、语境应用、常见搭配、词源故事、记忆技巧、同义词辨析 7 个板块的结构化详解。
+
+## 触发方式
+
+在 uTools 搜索框中输入以下任意关键词进入插件：
+
+- `explain` / `查词` / `word` / `vocabulary`
+
+## 开发
+
+```bash
+# 安装依赖
+npm install
+
+# 启动开发服务器
+npm run dev
+
+# 运行测试
+npm test
+
+# 生产构建
+npm run build
+```
+
+开发流程：启动 `npm run dev` 后，在 uTools 开发者工具中选择 `public/plugin.json`，点击"接入开发"即可加载插件。
+
+## 项目结构
+
+```
+src/
+├── App.jsx                     # 根组件
+├── MainPage/                   # 主界面 + 设置面板
+├── prompt-template/            # 7 板块提示词模板
+├── ai-call/                    # AI 调用封装（流式）
+├── markdown-view/              # Markdown 富文本渲染
+└── model-preference/           # 模型偏好持久化
+```
+
+## 技术栈
+
+- React 19 + Vite 6
+- Vitest 4 + Testing Library (25 个单元测试)
+- uTools AI API（流式调用）
+- uTools dbStorage（偏好持久化）

@@ -1,0 +1,20 @@
+{
+  "main": "index.html",
+  "preload": "preload/services.js",
+  "logo": "logo.png",
+  "development": {
+    "main": "http://localhost:5173"
+  },
+  "features": [
+    {
+      "code": "explain",
+      "explain": "英语单词详解 — 输入英文单词，查看包含音标、词义解析、词性用法、语境应用、常见搭配、词源故事、记忆技巧、同义词辨析的完整解释",
+      "cmds": [
+        "explain",
+        "查词",
+        "word",
+        "vocabulary"
+      ]
+    }
+  ]
+}
