@@ -1,13 +1,19 @@
 import { useState, useEffect } from 'react'
 import { useWordQuery } from '../use-word-query/index.js'
 import { MarkdownView } from '../markdown-view/index.jsx'
+import { HistoryView } from '../history-view/index.jsx'
 import { getPreferredModel, setPreferredModel } from '../model-preference/index.js'
 import './index.css'
 
+const VIEW_MAIN = 'main'
+const VIEW_SETTINGS = 'settings'
+const VIEW_HISTORY = 'history'
+
+// 尝试导入 HistoryView，如果失败会在这里抛出
 export default function MainPage () {
   const [word, setWord] = useState('')
   const { loading, error, result, query } = useWordQuery()
-  const [showSettings, setShowSettings] = useState(false)
+  const [currentView, setCurrentView] = useState(VIEW_MAIN)
   const [models, setModels] = useState([])
   const [selectedModel, setSelectedModel] = useState('')
 
@@ -33,11 +39,11 @@ export default function MainPage () {
     setPreferredModel(modelId)
   }
 
-  if (showSettings) {
+  if (currentView === VIEW_SETTINGS) {
     return (
       <div className="main-page">
         <header className="main-header">
-          <button className="back-btn" onClick={() => setShowSettings(false)}>← 返回</button>
+          <button className="back-btn" onClick={() => setCurrentView(VIEW_MAIN)}>← 返回</button>
         </header>
         <div className="settings-panel">
           <h1 className="settings-title">设置</h1>
@@ -60,11 +66,25 @@ export default function MainPage () {
     )
   }
 
+  if (currentView === VIEW_HISTORY) {
+    return (
+      <div className="main-page">
+        <header className="main-header">
+          <button className="back-btn" onClick={() => setCurrentView(VIEW_MAIN)}>← 返回</button>
+        </header>
+        <HistoryView />
+      </div>
+    )
+  }
+
   return (
     <div className="main-page">
       <header className="main-header">
         <h1>英语单词详解</h1>
-        <button className="gear-btn" onClick={() => setShowSettings(true)} title="设置">⚙</button>
+        <div className="header-actions">
+          <button className="history-btn" onClick={() => setCurrentView(VIEW_HISTORY)} title="查词历史">📖</button>
+          <button className="gear-btn" onClick={() => setCurrentView(VIEW_SETTINGS)} title="设置">⚙</button>
+        </div>
       </header>
       <div className="search-bar">
         <input

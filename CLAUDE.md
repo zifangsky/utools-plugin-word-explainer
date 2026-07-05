@@ -82,3 +82,35 @@ public/preload/
 ### 领域文档
 
 单上下文布局：仓库根目录 `CONTEXT.md` + `docs/adr/`。详见 `docs/agents/domain.md`。
+
+## MCP Tools: code-review-graph
+
+本仓库配置了 code-review-graph MCP 服务器。在探索代码前，优先使用图谱工具代替 Grep/Glob/Read。
+
+### 优先使用图谱工具的场景
+
+- **查找代码**：`semantic_search_nodes` 或 `query_graph` 替代 Grep
+- **理解影响范围**：`get_impact_radius` 替代手动追踪 import
+- **代码审查**：`detect_changes` + `get_review_context` 替代逐文件阅读
+- **查找关系**：`query_graph` 查询调用方/被调用方/导入关系/测试
+- **架构问题**：`get_architecture_overview`
+
+### 关键工具
+
+| 工具 | 用途 |
+|------|------|
+| `detect_changes` | 审查变更 — 风险评分分析 |
+| `get_review_context` | 审查上下文 — 包含源码片段 |
+| `get_impact_radius` | 了解变更的爆炸半径 |
+| `get_affected_flows` | 判断哪些执行路径受影响 |
+| `query_graph` | 追踪调用方、被调用方、导入、测试 |
+| `semantic_search_nodes` | 按名称或关键词查找函数/类 |
+| `get_architecture_overview` | 理解高层代码库结构 |
+| `refactor_tool` | 规划重命名、发现死代码 |
+
+### 工作流
+
+1. 文件变更后自动增量更新图谱（通过钩子）
+2. 审查变更用 `detect_changes`
+3. 理解影响范围用 `get_affected_flows`
+4. 检查测试覆盖用 `query_graph pattern="tests_for"`

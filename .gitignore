@@ -30,6 +30,16 @@ dist-ssr
 
 # Claude Code
 .claude/
+.mcp.json
 
 # Test files
 local_test
+
+# Dot directories (project-level config/tooling)
+.*/
+
+# Public build artifacts (generated, not source)
+public/index.html
+public/index-*.js
+public/index-*.css
+public/assets/
