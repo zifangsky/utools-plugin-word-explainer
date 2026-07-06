@@ -6,7 +6,8 @@ import * as queryHistory from '../query-history/index.js'
 
 vi.mock('../query-history/index.js', () => ({
   getHistoryRecords: vi.fn(),
-  getDetailRecord: vi.fn()
+  getDetailRecord: vi.fn(),
+  deleteQueryRecords: vi.fn()
 }))
 
 vi.mock('../markdown-view/index.jsx', () => ({
@@ -117,5 +118,64 @@ describe('HistoryView', () => {
 
     expect(screen.getByText('hello')).toBeInTheDocument()
     expect(screen.getByText('world')).toBeInTheDocument()
+  })
+
+  describe('批量选择与删除', () => {
+    it('初始删除按钮禁用，勾选卡片复选框后可用', () => {
+      render(<HistoryView />)
+
+      const delBtn = screen.getByTestId('delete-selected-btn')
+      expect(delBtn.disabled).toBe(true)
+
+      fireEvent.click(screen.getByTestId('select-detail/ts_hello'))
+
+      expect(screen.getByTestId('delete-selected-btn').disabled).toBe(false)
+    })
+
+    it('全选复选框一次勾选当前列表全部卡片，再次点击取消', () => {
+      render(<HistoryView />)
+
+      const selectAll = screen.getByTestId('select-all-checkbox')
+      expect(selectAll.checked).toBe(false)
+
+      fireEvent.click(selectAll)
+      expect(screen.getByTestId('select-detail/ts_hello').checked).toBe(true)
+      expect(screen.getByTestId('select-detail/ts_world').checked).toBe(true)
+
+      fireEvent.click(selectAll)
+      expect(screen.getByTestId('select-detail/ts_hello').checked).toBe(false)
+      expect(screen.getByTestId('select-detail/ts_world').checked).toBe(false)
+    })
+
+    it('点击删除并确认后调用 deleteQueryRecords 并刷新列表', () => {
+      window.confirm = vi.fn(() => true)
+      render(<HistoryView />)
+
+      fireEvent.click(screen.getByTestId('select-detail/ts_hello'))
+      fireEvent.click(screen.getByTestId('delete-selected-btn'))
+
+      expect(window.confirm).toHaveBeenCalledWith('确定删除 1 条记录吗？')
+      expect(queryHistory.deleteQueryRecords).toHaveBeenCalledWith(
+        expect.anything(),
+        ['detail/ts_hello']
+      )
+    })
+
+    it('删除确认弹窗取消时不调用 deleteQueryRecords', () => {
+      window.confirm = vi.fn(() => false)
+      render(<HistoryView />)
+
+      fireEvent.click(screen.getByTestId('select-detail/ts_hello'))
+      fireEvent.click(screen.getByTestId('delete-selected-btn'))
+
+      expect(queryHistory.deleteQueryRecords).not.toHaveBeenCalled()
+    })
+
+    it('练习按钮为禁用态且无点击副作用', () => {
+      render(<HistoryView />)
+
+      const practiceBtn = screen.getByTestId('practice-btn')
+      expect(practiceBtn.disabled).toBe(true)
+    })
   })
 })
