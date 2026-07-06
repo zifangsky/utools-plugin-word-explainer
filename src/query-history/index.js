@@ -155,3 +155,24 @@ export function getHistoryRecords (db, timeFilter = '7d') {
 export function getDetailRecord (db, detailDocId) {
   return db.get(detailDocId)
 }
+
+/**
+ * 批量删除查词记录。
+ * @param {object} db - utools.db 接口
+ * @param {string[]} detailDocIds - 待删除的详情文档 ID 列表
+ */
+export function deleteQueryRecords (db, detailDocIds) {
+  const summary = db.get(SUMMARY_DOC_ID)
+  if (!summary) return
+
+  const idSet = new Set(detailDocIds)
+  for (const id of detailDocIds) {
+    const doc = db.get(id)
+    if (doc) {
+      db.remove(doc)
+    }
+  }
+
+  const records = (summary.records || []).filter(r => !idSet.has(r.detailDocId))
+  db.put({ ...summary, records })
+}

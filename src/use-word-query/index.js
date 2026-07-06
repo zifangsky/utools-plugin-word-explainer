@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react'
 import { buildMessages } from '../prompt-template/index.js'
 import { queryWordStream } from '../ai-call/index.js'
 import { parseJsonFromContent, saveQueryRecord } from '../query-history/index.js'
+import { getSaveQueryHistory } from '../history-preference/index.js'
 
 export function useWordQuery () {
   const [loading, setLoading] = useState(false)
@@ -29,7 +30,7 @@ export function useWordQuery () {
       const parsed = parseJsonFromContent(fullContent)
       if (parsed) {
         const db = window.utools ? window.utools.db : null
-        if (db) {
+        if (db && getSaveQueryHistory()) {
           saveQueryRecord(db, trimmed, parsed.parsed.phonetic, parsed.parsed.chineseMeanings, parsed.cleanContent, model || undefined)
         }
         setResult(parsed.cleanContent)

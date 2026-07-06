@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { getHistoryRecords, getDetailRecord } from '../query-history/index.js'
+import { getHistoryRecords, getDetailRecord, deleteQueryRecords } from '../query-history/index.js'
 import { MarkdownView } from '../markdown-view/index.jsx'
 import './index.css'
 
@@ -37,6 +37,7 @@ export function HistoryView () {
   const [detailContent, setDetailContent] = useState(null)
   const [loadingDetail, setLoadingDetail] = useState(false)
   const [playingWord, setPlayingWord] = useState(null)
+  const [selectedIds, setSelectedIds] = useState(() => new Set())
 
   // 加载记录
   useEffect(() => {
@@ -55,6 +56,10 @@ export function HistoryView () {
     const q = searchQuery.trim().toLowerCase()
     return records.filter(r => r.word.toLowerCase().includes(q))
   }, [records, searchQuery])
+
+  // 全选态：当前列表全部勾选时为真（兼容筛选/搜索变更）
+  const allSelected = filteredRecords.length > 0 &&
+    filteredRecords.every(r => selectedIds.has(r.detailDocId))
 
   // 选中单词加载详情
   const handleSelect = useCallback((record) => {
@@ -96,6 +101,41 @@ export function HistoryView () {
     window.speechSynthesis.cancel()
     window.speechSynthesis.speak(utterance)
   }, [])
+
+  // 勾选/取消单个卡片
+  const toggleSelect = useCallback((detailDocId) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(detailDocId)) next.delete(detailDocId)
+      else next.add(detailDocId)
+      return next
+    })
+  }, [])
+
+  // 全选/取消全选当前列表
+  const toggleSelectAll = useCallback(() => {
+    setSelectedIds(prev => {
+      const allNow = filteredRecords.length > 0 &&
+        filteredRecords.every(r => prev.has(r.detailDocId))
+      if (allNow) return new Set()
+      return new Set(filteredRecords.map(r => r.detailDocId))
+    })
+  }, [filteredRecords])
+
+  // 批量删除（带二次确认）
+  const handleDelete = useCallback(() => {
+    if (selectedIds.size === 0) return
+    const ids = [...selectedIds]
+    if (window.confirm(`确定删除 ${ids.length} 条记录吗？`)) {
+      const db = getDb()
+      if (db) deleteQueryRecords(db, ids)
+      const result = getHistoryRecords(db, timeFilter)
+      setRecords(result)
+      setSelectedId(null)
+      setDetailContent(null)
+      setSelectedIds(new Set())
+    }
+  }, [selectedIds, timeFilter])
 
   return (
     <div className="history-view" data-testid="history-view">
@@ -144,6 +184,14 @@ export function HistoryView () {
               onClick={() => handleSelect(rec)}
               data-selected={selectedId === rec.detailDocId ? 'true' : 'false'}
             >
+              <input
+                type="checkbox"
+                className="history-card-checkbox"
+                checked={selectedIds.has(rec.detailDocId)}
+                onChange={() => toggleSelect(rec.detailDocId)}
+                onClick={(e) => e.stopPropagation()}
+                data-testid={`select-${rec.detailDocId}`}
+              />
               <div className="history-card-header">
                 <span className="history-card-word">{rec.word}</span>
                 {rec.phonetic && <span className="history-card-phonetic">{rec.phonetic}</span>}
@@ -162,6 +210,33 @@ export function HistoryView () {
               <div className="history-card-time">{formatTime(rec.timestamp)}</div>
             </div>
           ))}
+        </div>
+        {/* 底部操作栏 */}
+        <div className="history-op-bar">
+          <label className="history-select-all">
+            <input
+              type="checkbox"
+              checked={allSelected}
+              onChange={toggleSelectAll}
+              data-testid="select-all-checkbox"
+            />
+            全选
+          </label>
+          <button
+            className="history-del-btn"
+            disabled={selectedIds.size === 0}
+            onClick={handleDelete}
+            data-testid="delete-selected-btn"
+          >
+            删除
+          </button>
+          <button
+            className="history-practice-btn"
+            disabled
+            data-testid="practice-btn"
+          >
+            练习
+          </button>
         </div>
       </div>
 
