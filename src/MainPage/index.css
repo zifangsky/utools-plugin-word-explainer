@@ -20,9 +20,15 @@
   margin: 0;
 }
 
-.gear-btn {
+.header-actions {
   position: absolute;
   right: 0;
+  display: flex;
+  gap: 6px;
+}
+
+.history-btn,
+.gear-btn {
   background: #f5f5f5;
   border: 1px solid #bbb;
   border-radius: 4px;
@@ -33,6 +39,7 @@
   color: #555;
 }
 
+.history-btn:hover,
 .gear-btn:hover {
   background: #e0e0e0;
   border-color: #999;
@@ -159,6 +166,7 @@
     border-top-color: #555;
   }
 
+  .history-btn,
   .gear-btn,
   .back-btn {
     background: #444;
@@ -166,6 +174,7 @@
     color: #ddd;
   }
 
+  .history-btn:hover,
   .gear-btn:hover,
   .back-btn:hover {
     background: #555;

@@ -30,6 +30,19 @@ dist-ssr
 
 # Claude Code
 .claude/
+.mcp.json
 
 # Test files
 local_test
+
+# Dot directories (project-level config/tooling)
+.*/
+
+# 跟踪项目宪法与 CodexSpec 代理配置（覆盖上面的 .*/ 规则）
+!.codexspec/
+
+# Public build artifacts (generated, not source)
+public/index.html
+public/index-*.js
+public/index-*.css
+public/assets/

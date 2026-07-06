@@ -28,4 +28,13 @@ describe('buildMessages', () => {
     expect(content).toContain('---')
     expect(content).toContain('**')
   })
+
+  it('消息内容包含结构化 JSON 摘要输出指令', () => {
+    const messages = buildMessages('test')
+    const content = messages[0].content
+    expect(content).toContain('===JSON===')
+    expect(content).toContain('"word"')
+    expect(content).toContain('"phonetic"')
+    expect(content).toContain('"chineseMeanings"')
+  })
 })

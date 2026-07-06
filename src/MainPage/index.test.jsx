@@ -11,6 +11,10 @@ vi.mock('../model-preference/index.js', () => ({
   setPreferredModel: vi.fn()
 }))
 
+vi.mock('../history-view/index.jsx', () => ({
+  HistoryView: () => <div data-testid="history-view-mock">查词历史</div>
+}))
+
 import { useWordQuery } from '../use-word-query/index.js'
 import { getPreferredModel, setPreferredModel } from '../model-preference/index.js'
 
@@ -151,6 +155,35 @@ describe('MainPage 设置面板', () => {
   it('点击返回按钮回到主界面', () => {
     render(<MainPage />)
     fireEvent.click(screen.getByTitle('设置'))
+    fireEvent.click(screen.getByText('← 返回'))
+
+    expect(screen.getByPlaceholderText('输入英文单词...')).not.toBeNull()
+  })
+})
+
+describe('MainPage 历史面板', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setupUseWordQuery()
+    setupWindowUtools()
+  })
+
+  it('主界面渲染历史按钮', () => {
+    render(<MainPage />)
+    expect(screen.getByTitle('查词历史')).not.toBeNull()
+  })
+
+  it('点击历史按钮切换到历史面板', () => {
+    render(<MainPage />)
+    fireEvent.click(screen.getByTitle('查词历史'))
+
+    expect(screen.getByTestId('history-view-mock')).not.toBeNull()
+    expect(screen.getByText('← 返回')).not.toBeNull()
+  })
+
+  it('点击历史面板返回按钮回到主界面', () => {
+    render(<MainPage />)
+    fireEvent.click(screen.getByTitle('查词历史'))
     fireEvent.click(screen.getByText('← 返回'))
 
     expect(screen.getByPlaceholderText('输入英文单词...')).not.toBeNull()
