@@ -40,5 +40,5 @@
 ## 技术信息
 
 - 开发技术：React 19 + Vite 6
-- 测试覆盖：7 个模块、58 个测试用例
+- 测试覆盖：10 个模块、106 个测试用例
 - 开源仓库：https://github.com/zifangsky/utools-plugin-word-explainer
