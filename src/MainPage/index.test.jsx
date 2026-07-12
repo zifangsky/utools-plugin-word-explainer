@@ -159,6 +159,19 @@ describe('MainPage 设置面板', () => {
     expect(backBtn.querySelector('.back-icon')).not.toBeNull()
   })
 
+  it('返回图标使用清理版 SVG（currentColor + viewBox 0 0 800 800 + 双 path）', () => {
+    render(<MainPage />)
+    fireEvent.click(screen.getByTitle('设置'))
+
+    const backBtn = screen.getByRole('button', { name: /返回/ })
+    const icon = backBtn.querySelector('.back-icon')
+    expect(icon).not.toBeNull()
+    expect(icon.getAttribute('viewBox')).toBe('0 0 800 800')
+    expect(icon.getAttribute('fill')).toBe('currentColor')
+    const paths = icon.querySelectorAll('path')
+    expect(paths.length).toBe(2)
+  })
+
   it('点击齿轮按钮切换到设置页面', () => {
     render(<MainPage />)
     fireEvent.click(screen.getByTitle('设置'))
