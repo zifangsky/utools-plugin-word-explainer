@@ -10,7 +10,7 @@ React + Vite 工程，在 uTools 平台中运行的桌面插件。用户输入�
 ```bash
 npm run dev      # 启动开发服务器 (localhost:5173)
 npm run build    # 生产构建到 dist/
-npm test         # 运行 105 个测试 (vitest)
+npm test         # 运行 106 个测试 (vitest)
 ```
 
 ## 架构概述
