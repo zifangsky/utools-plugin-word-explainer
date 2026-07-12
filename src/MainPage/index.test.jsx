@@ -3,6 +3,10 @@ import '@testing-library/jest-dom'
 import { render, fireEvent, screen } from '@testing-library/react'
 import MainPage from './index.jsx'
 
+import { useWordQuery } from '../use-word-query/index.js'
+import { getPreferredModel, setPreferredModel } from '../model-preference/index.js'
+import { setSaveQueryHistory } from '../history-preference/index.js'
+
 vi.mock('../use-word-query/index.js', () => ({
   useWordQuery: vi.fn()
 }))
@@ -18,12 +22,8 @@ vi.mock('../history-preference/index.js', () => ({
 }))
 
 vi.mock('../history-view/index.jsx', () => ({
-  HistoryView: () => <div data-testid="history-view-mock">查词历史</div>
+  HistoryView: () => <div data-testid='history-view-mock'>查词历史</div>
 }))
-
-import { useWordQuery } from '../use-word-query/index.js'
-import { getPreferredModel, setPreferredModel } from '../model-preference/index.js'
-import { setSaveQueryHistory } from '../history-preference/index.js'
 
 function setupUseWordQuery (overrides = {}) {
   useWordQuery.mockReturnValue({
@@ -119,8 +119,9 @@ describe('MainPage 主界面', () => {
 
   it('选择模型后调用 setPreferredModel', async () => {
     // 使用同步 resolve 的 mock 让 models 在首次渲染即可用
+    const models = [{ id: 'model-a', label: 'Model A' }, { id: 'model-b', label: 'Model B' }]
     window.utools.allAiModels = vi.fn().mockImplementation(() => ({
-      then: (cb) => { cb([{ id: 'model-a', label: 'Model A' }, { id: 'model-b', label: 'Model B' }]); return { catch: () => {} } }
+      then: (cb) => { cb(models); return { catch: () => {} } }
     }))
 
     const { container } = render(<MainPage />)

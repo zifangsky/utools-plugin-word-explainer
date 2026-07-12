@@ -4,7 +4,7 @@ import { MarkdownView } from './index.jsx'
 
 describe('MarkdownView', () => {
   it('渲染加粗文本为 strong 元素', () => {
-    const { container } = render(<MarkdownView content="**标题**" />)
+    const { container } = render(<MarkdownView content='**标题**' />)
     expect(container.querySelector('strong')).not.toBeNull()
     expect(container.querySelector('strong').textContent).toBe('标题')
   })
@@ -15,7 +15,7 @@ describe('MarkdownView', () => {
   })
 
   it('渲染包含 7 板块标题的完整 markdown', () => {
-    const md = `**1、词义解析**\n\n内容\n\n---\n\n**2、词性用法**\n\n内容`
+    const md = '**1、词义解析**\n\n内容\n\n---\n\n**2、词性用法**\n\n内容'
     const { container } = render(<MarkdownView content={md} />)
     const strongs = container.querySelectorAll('strong')
     expect(strongs.length).toBeGreaterThanOrEqual(2)
@@ -23,7 +23,7 @@ describe('MarkdownView', () => {
   })
 
   it('保留纯文本段落', () => {
-    const { container } = render(<MarkdownView content="这是一段普通文本" />)
+    const { container } = render(<MarkdownView content='这是一段普通文本' />)
     expect(container.textContent).toContain('这是一段普通文本')
   })
 

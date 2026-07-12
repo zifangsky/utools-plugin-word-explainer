@@ -68,7 +68,7 @@ export function saveQueryRecord (db, word, phonetic, chineseMeanings, content, m
   db.put(detailDoc)
 
   // 2. 读取现有摘要文档
-  let summary = db.get(SUMMARY_DOC_ID)
+  const summary = db.get(SUMMARY_DOC_ID)
   let records = []
 
   if (summary) {

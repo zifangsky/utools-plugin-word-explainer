@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createExplainWordHandler } from './index.js'
 
+import { buildMessages } from '../prompt-template/index.js'
+
 vi.mock('../prompt-template/index.js', () => ({
   buildMessages: vi.fn()
 }))
-
-import { buildMessages } from '../prompt-template/index.js'
 
 describe('createExplainWordHandler', () => {
   let aiClient

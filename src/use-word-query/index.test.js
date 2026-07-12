@@ -2,6 +2,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useWordQuery } from './index.js'
 
+import { buildMessages } from '../prompt-template/index.js'
+import { queryWordStream } from '../ai-call/index.js'
+import { parseJsonFromContent, saveQueryRecord } from '../query-history/index.js'
+import { getSaveQueryHistory } from '../history-preference/index.js'
+
 vi.mock('../prompt-template/index.js', () => ({
   buildMessages: vi.fn((word) => [{ role: 'user', content: `test prompt for: ${word}` }])
 }))
@@ -14,11 +19,6 @@ vi.mock('../query-history/index.js', () => ({
   parseJsonFromContent: vi.fn(),
   saveQueryRecord: vi.fn()
 }))
-
-import { buildMessages } from '../prompt-template/index.js'
-import { queryWordStream } from '../ai-call/index.js'
-import { parseJsonFromContent, saveQueryRecord } from '../query-history/index.js'
-import { getSaveQueryHistory } from '../history-preference/index.js'
 
 describe('useWordQuery', () => {
   beforeEach(() => {
