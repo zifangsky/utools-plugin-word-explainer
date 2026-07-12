@@ -184,15 +184,15 @@ export function HistoryView () {
               onClick={() => handleSelect(rec)}
               data-selected={selectedId === rec.detailDocId ? 'true' : 'false'}
             >
-              <input
-                type="checkbox"
-                className="history-card-checkbox"
-                checked={selectedIds.has(rec.detailDocId)}
-                onChange={() => toggleSelect(rec.detailDocId)}
-                onClick={(e) => e.stopPropagation()}
-                data-testid={`select-${rec.detailDocId}`}
-              />
               <div className="history-card-header">
+                <input
+                  type="checkbox"
+                  className="history-card-checkbox"
+                  checked={selectedIds.has(rec.detailDocId)}
+                  onChange={() => toggleSelect(rec.detailDocId)}
+                  onClick={(e) => e.stopPropagation()}
+                  data-testid={`select-${rec.detailDocId}`}
+                />
                 <span className="history-card-word">{rec.word}</span>
                 {rec.phonetic && <span className="history-card-phonetic">{rec.phonetic}</span>}
                 <button

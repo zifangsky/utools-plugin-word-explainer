@@ -151,18 +151,26 @@ describe('MainPage 设置面板', () => {
     getPreferredModel.mockReturnValue('saved-model')
   })
 
+  it('设置页返回按钮显示 SVG 图标', () => {
+    render(<MainPage />)
+    fireEvent.click(screen.getByTitle('设置'))
+
+    const backBtn = screen.getByRole('button', { name: /返回/ })
+    expect(backBtn.querySelector('.back-icon')).not.toBeNull()
+  })
+
   it('点击齿轮按钮切换到设置页面', () => {
     render(<MainPage />)
     fireEvent.click(screen.getByTitle('设置'))
 
     expect(screen.getByText('AI 模型选择')).not.toBeNull()
-    expect(screen.getByText('← 返回')).not.toBeNull()
+    expect(screen.getByText('返回')).not.toBeNull()
   })
 
   it('点击返回按钮回到主界面', () => {
     render(<MainPage />)
     fireEvent.click(screen.getByTitle('设置'))
-    fireEvent.click(screen.getByText('← 返回'))
+    fireEvent.click(screen.getByText('返回'))
 
     expect(screen.getByPlaceholderText('输入英文单词...')).not.toBeNull()
   })
@@ -204,13 +212,13 @@ describe('MainPage 历史面板', () => {
     fireEvent.click(screen.getByTitle('查词历史'))
 
     expect(screen.getByTestId('history-view-mock')).not.toBeNull()
-    expect(screen.getByText('← 返回')).not.toBeNull()
+    expect(screen.getByText('返回')).not.toBeNull()
   })
 
   it('点击历史面板返回按钮回到主界面', () => {
     render(<MainPage />)
     fireEvent.click(screen.getByTitle('查词历史'))
-    fireEvent.click(screen.getByText('← 返回'))
+    fireEvent.click(screen.getByText('返回'))
 
     expect(screen.getByPlaceholderText('输入英文单词...')).not.toBeNull()
   })

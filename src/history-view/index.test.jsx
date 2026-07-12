@@ -121,6 +121,14 @@ describe('HistoryView', () => {
   })
 
   describe('批量选择与删除', () => {
+    it('复选框位于单词卡片的 header 内，与单词在同一行', () => {
+      render(<HistoryView />)
+
+      const card = screen.getByText('hello').closest('.history-card')
+      const header = card.querySelector('.history-card-header')
+      expect(header.querySelector('.history-card-checkbox')).not.toBeNull()
+    })
+
     it('初始删除按钮禁用，勾选卡片复选框后可用', () => {
       render(<HistoryView />)
 

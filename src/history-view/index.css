@@ -124,6 +124,12 @@
   flex-wrap: wrap;
 }
 
+.history-card-checkbox {
+  margin: 0;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
 .history-card-word {
   font-size: 14px;
   font-weight: 600;
