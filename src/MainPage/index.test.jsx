@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import '@testing-library/jest-dom'
 import { render, fireEvent, screen } from '@testing-library/react'
 import MainPage from './index.jsx'
 
@@ -11,12 +12,18 @@ vi.mock('../model-preference/index.js', () => ({
   setPreferredModel: vi.fn()
 }))
 
+vi.mock('../history-preference/index.js', () => ({
+  getSaveQueryHistory: vi.fn(() => true),
+  setSaveQueryHistory: vi.fn()
+}))
+
 vi.mock('../history-view/index.jsx', () => ({
   HistoryView: () => <div data-testid="history-view-mock">查词历史</div>
 }))
 
 import { useWordQuery } from '../use-word-query/index.js'
 import { getPreferredModel, setPreferredModel } from '../model-preference/index.js'
+import { setSaveQueryHistory } from '../history-preference/index.js'
 
 function setupUseWordQuery (overrides = {}) {
   useWordQuery.mockReturnValue({
@@ -158,6 +165,25 @@ describe('MainPage 设置面板', () => {
     fireEvent.click(screen.getByText('← 返回'))
 
     expect(screen.getByPlaceholderText('输入英文单词...')).not.toBeNull()
+  })
+
+  it('设置页面渲染「保存查词历史记录」开关且默认开启', () => {
+    render(<MainPage />)
+    fireEvent.click(screen.getByTitle('设置'))
+
+    expect(screen.getByText('保存查词历史记录')).toBeInTheDocument()
+    const toggle = screen.getByTestId('save-history-toggle')
+    expect(toggle).toBeChecked()
+  })
+
+  it('关闭开关时调用 setSaveQueryHistory(false)', () => {
+    render(<MainPage />)
+    fireEvent.click(screen.getByTitle('设置'))
+
+    const toggle = screen.getByTestId('save-history-toggle')
+    fireEvent.click(toggle)
+
+    expect(setSaveQueryHistory).toHaveBeenCalledWith(false)
   })
 })
 

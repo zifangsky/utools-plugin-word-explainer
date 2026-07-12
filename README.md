@@ -41,16 +41,16 @@ src/
 ├── ai-call/                    # AI 调用封装（流式）
 ├── markdown-view/              # Markdown 富文本渲染
 ├── model-preference/           # 模型偏好持久化
-├── use-word-query/             # 查询状态机 Hook（含自动保存查词历史）
-├── query-history/              # 查词历史数据层（save/getHistoryRecords/getDetailRecord）
+├── history-preference/         # 保存查词历史开关持久化
+├── use-word-query/             # 查询状态机 Hook（含自动保存查词历史，受 saveQueryHistory 开关门控）
+├── query-history/              # 查词历史数据层（save/getHistoryRecords/getDetailRecord/deleteQueryRecords）
 ├── history-view/               # 查词历史 UI（搜索、时间筛选、单词卡片、详情）
 ├── mcp-tools/                  # MCP 工具 handler
 ```
 
 ## 技术栈
 
-- React 19 + Vite 6
-- Vitest 4 + Testing Library (86 个测试)
+  - Vitest 4 + Testing Library (103 个测试)
 - uTools AI API（流式调用）
 - uTools dbStorage（偏好持久化）
 - uTools MCP Tools（registerTool）

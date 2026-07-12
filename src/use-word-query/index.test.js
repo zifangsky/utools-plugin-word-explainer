@@ -18,6 +18,7 @@ vi.mock('../query-history/index.js', () => ({
 import { buildMessages } from '../prompt-template/index.js'
 import { queryWordStream } from '../ai-call/index.js'
 import { parseJsonFromContent, saveQueryRecord } from '../query-history/index.js'
+import { getSaveQueryHistory } from '../history-preference/index.js'
 
 describe('useWordQuery', () => {
   beforeEach(() => {
@@ -155,5 +156,71 @@ describe('useWordQuery', () => {
     expect(parseJsonFromContent).toHaveBeenCalledWith(fullContent)
     expect(saveQueryRecord).not.toHaveBeenCalled()
     expect(result.current.result).toBe(fullContent)
+  })
+})
+
+describe('保存查词历史门控（getSaveQueryHistory）', () => {
+  // 真实 dbStorage fake：getSaveQueryHistory 读取 live window，不 mock
+  let saveEnabled
+  const fakeDbStorage = {
+    getItem: (k) => (k === 'saveQueryHistory' ? saveEnabled : null),
+    setItem: () => {}
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    saveEnabled = true // 默认开启
+    window.utools = { db: {}, dbStorage: fakeDbStorage }
+  })
+
+  it('开关开启（缺省）时查询成功后自动保存查词记录', async () => {
+    saveEnabled = true
+    const fullContent = '**hello** /həˈləʊ/\n\n解释\n\n===JSON===\n{"word":"hello","phonetic":"həˈləʊ","chineseMeanings":["你好"]}'
+    queryWordStream.mockImplementation(async (_opt, _model, onChunk) => {
+      onChunk(fullContent)
+    })
+    parseJsonFromContent.mockReturnValue({
+      parsed: { word: 'hello', phonetic: 'həˈləʊ', chineseMeanings: ['你好'] },
+      cleanContent: '**hello** /həˈləʊ/\n\n解释'
+    })
+
+    const { result } = renderHook(() => useWordQuery())
+
+    await act(async () => {
+      await result.current.query('hello', 'gpt-4')
+    })
+
+    expect(getSaveQueryHistory()).toBe(true)
+    expect(saveQueryRecord).toHaveBeenCalledWith(
+      window.utools.db,
+      'hello',
+      'həˈləʊ',
+      ['你好'],
+      '**hello** /həˈləʊ/\n\n解释',
+      'gpt-4'
+    )
+  })
+
+  it('开关关闭时不保存查词记录', async () => {
+    saveEnabled = false
+    const fullContent = '**hello** /həˈləʊ/\n\n解释\n\n===JSON===\n{"word":"hello","phonetic":"həˈləʊ","chineseMeanings":["你好"]}'
+    queryWordStream.mockImplementation(async (_opt, _model, onChunk) => {
+      onChunk(fullContent)
+    })
+    parseJsonFromContent.mockReturnValue({
+      parsed: { word: 'hello', phonetic: 'həˈləʊ', chineseMeanings: ['你好'] },
+      cleanContent: '**hello** /həˈləʊ/\n\n解释'
+    })
+
+    const { result } = renderHook(() => useWordQuery())
+
+    await act(async () => {
+      await result.current.query('hello', 'gpt-4')
+    })
+
+    expect(getSaveQueryHistory()).toBe(false)
+    expect(saveQueryRecord).not.toHaveBeenCalled()
+    // result 仍显示剥离后的内容
+    expect(result.current.result).toContain('**hello**')
   })
 })

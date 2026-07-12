@@ -11,6 +11,7 @@
   align-items: center;
   justify-content: center;
   position: relative;
+  min-height: 32px;
   margin-bottom: 16px;
   flex-shrink: 0;
 }
@@ -248,4 +249,74 @@
   margin-top: 8px;
   font-size: 12px;
   color: #999;
+}
+
+/* ===== 保存查词历史记录 开关（纯 CSS toggle） ===== */
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 16px 0 8px 0;
+}
+
+.setting-row .setting-label {
+  margin-bottom: 0;
+}
+
+.save-history-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.save-history-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.save-history-switch .slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background: #ccc;
+  border-radius: 24px;
+  transition: background 0.2s;
+}
+
+.save-history-switch .slider::before {
+  content: "";
+  position: absolute;
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+
+.save-history-switch input:checked + .slider {
+  background: #1677ff;
+}
+
+.save-history-switch input:checked + .slider::before {
+  transform: translateX(20px);
+}
+
+.save-history-switch input:focus-visible + .slider {
+  box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.3);
+}
+
+@media (prefers-color-scheme: dark) {
+  .save-history-switch .slider {
+    background: #555;
+  }
+
+  .save-history-switch input:checked + .slider {
+    background: #1677ff;
+  }
 }

@@ -3,7 +3,8 @@ import {
   parseJsonFromContent,
   saveQueryRecord,
   getHistoryRecords,
-  getDetailRecord
+  getDetailRecord,
+  deleteQueryRecords
 } from './index.js'
 
 // --- parseJsonFromContent ---
@@ -239,5 +240,57 @@ describe('saveQueryRecord / getHistoryRecords / getDetailRecord', () => {
   it('getDetailRecord 文档不存在时返回 null', () => {
     const mockDb = createMockDb()
     expect(getDetailRecord(mockDb, 'detail/nonexistent')).toBeNull()
+  })
+})
+
+// --- deleteQueryRecords（非 mock 集成测试，真实 db double 语义）---
+
+describe('deleteQueryRecords', () => {
+  it('删除指定 detail 文档并从 history_summary 移除对应记录', () => {
+    const mockDb = createMockDb()
+    mockDb._setDoc({ _id: 'detail/ts_a', _rev: '1', word: 'alpha', content: 'A' })
+    mockDb._setDoc({ _id: 'detail/ts_b', _rev: '1', word: 'beta', content: 'B' })
+    mockDb._setDoc({
+      _id: 'history_summary',
+      _rev: '1',
+      records: [
+        { word: 'alpha', detailDocId: 'detail/ts_a' },
+        { word: 'beta', detailDocId: 'detail/ts_b' }
+      ]
+    })
+
+    deleteQueryRecords(mockDb, ['detail/ts_a'])
+
+    // detail 文档被真实删除
+    expect(mockDb.get('detail/ts_a')).toBeNull()
+    // summary 中对应记录被移除，其余保留
+    const summary = mockDb.get('history_summary')
+    expect(summary.records).toHaveLength(1)
+    expect(summary.records[0].word).toBe('beta')
+  })
+
+  it('缺失的 detail 文档被跳过，其余正常删除', () => {
+    const mockDb = createMockDb()
+    mockDb._setDoc({ _id: 'detail/ts_b', _rev: '1', word: 'beta', content: 'B' })
+    mockDb._setDoc({
+      _id: 'history_summary',
+      _rev: '1',
+      records: [
+        { word: 'alpha', detailDocId: 'detail/ts_a' },
+        { word: 'beta', detailDocId: 'detail/ts_b' }
+      ]
+    })
+
+    // detail/ts_a 不存在，应跳过不影响其余删除
+    deleteQueryRecords(mockDb, ['detail/ts_a', 'detail/ts_b'])
+
+    expect(mockDb.get('detail/ts_b')).toBeNull()
+    const summary = mockDb.get('history_summary')
+    expect(summary.records).toHaveLength(0)
+  })
+
+  it('无 history_summary 时不抛错', () => {
+    const mockDb = createMockDb()
+    expect(() => deleteQueryRecords(mockDb, ['detail/ts_x'])).not.toThrow()
   })
 })

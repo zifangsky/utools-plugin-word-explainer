@@ -3,6 +3,7 @@ import { useWordQuery } from '../use-word-query/index.js'
 import { MarkdownView } from '../markdown-view/index.jsx'
 import { HistoryView } from '../history-view/index.jsx'
 import { getPreferredModel, setPreferredModel } from '../model-preference/index.js'
+import { getSaveQueryHistory, setSaveQueryHistory } from '../history-preference/index.js'
 import './index.css'
 
 const VIEW_MAIN = 'main'
@@ -16,6 +17,7 @@ export default function MainPage () {
   const [currentView, setCurrentView] = useState(VIEW_MAIN)
   const [models, setModels] = useState([])
   const [selectedModel, setSelectedModel] = useState('')
+  const [saveEnabled, setSaveEnabled] = useState(() => getSaveQueryHistory())
 
   useEffect(() => {
     const preferred = getPreferredModel()
@@ -37,6 +39,12 @@ export default function MainPage () {
   const handleModelChange = (modelId) => {
     setSelectedModel(modelId)
     setPreferredModel(modelId)
+  }
+
+  const handleToggleSave = (e) => {
+    const next = e.target.checked
+    setSaveEnabled(next)
+    setSaveQueryHistory(next)
   }
 
   if (currentView === VIEW_SETTINGS) {
@@ -61,6 +69,19 @@ export default function MainPage () {
             ))}
           </select>
           <p className="setting-hint">选择用于生成单词解释的 AI 模型，偏好自动保存</p>
+          <div className="setting-row">
+            <label className="setting-label">保存查词历史记录</label>
+            <label className="save-history-switch">
+              <input
+                type="checkbox"
+                checked={saveEnabled}
+                onChange={handleToggleSave}
+                data-testid="save-history-toggle"
+              />
+              <span className="slider" />
+            </label>
+          </div>
+          <p className="setting-hint">关闭后将不再自动保存新的查词记录（已有记录保留）</p>
         </div>
       </div>
     )

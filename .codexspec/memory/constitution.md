@@ -1,28 +1,21 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version: placeholder (无版本) → 1.0.0
-Bump Rationale: MAJOR — 将通用占位宪法替换为基于 CLAUDE.md / CONTEXT.md / README.md /
-docs/agents/* / .claude/commands/codexspec/* / .workbuddy/memory/MEMORY.md 的实际项目宪法，
-重定义全部原则并新增 技术栈 / 代码规范 / 开发工作流 / 质量门禁 / 安全要求 / 性能标准 /
-文档要求 / 治理 章节。
+Version: 1.0.0 → 1.1.0
+Bump Rationale: MINOR — 新增原则 8「强制严格 TDD（测试驱动开发）」，将测试先行上升为不可妥协的
+开发必经流程：所有生产代码 MUST 先 RED（编写失败测试）后 GREEN（最小实现）。同步强化原则 2 交叉引用。
 
 Changes:
-- Modified: 通用 6 原则（Code Quality/Testing/Documentation/Architecture/Performance/Security）
-  重定义为 7 条项目专属原则（模块边界、行为驱动测试、领域边界、uTools 平台契约、流式渲染、
-  文档同步、简洁优先）
-- Added: 技术栈、代码规范、开发工作流、质量门禁、安全要求、性能标准、文档要求、治理 章节；
-  文件头 Sync Impact Report 注释
-- Removed: 模板化通用原则描述
+- Added: 原则 8 强制严格 TDD（RED → GREEN → REFACTOR；测试文件 MUST 先于实现文件创建/提交；
+  适用逻辑与可观测行为；纯视觉/布局 CSS 以手动/截图核验替代并先记录验证准则）
+- Modified: 原则 2 增加交叉引用「测试顺序遵循原则 8（强制严格 TDD）：先红后绿」
+- Modified: 顶部版本号 1.0.0 → 1.1.0；最后修订日期 2026-07-07
+- Modified: tasks-template 一致性备注（test-first 现由原则 8 强制启用，替代原原则 2 描述）
 
 Template Consistency Check:
-- .codexspec/templates/docs/plan-template-simple.md: ✅ aligned（通用引用 constitution，无硬编码原则名）
-- .codexspec/templates/docs/plan-template-detailed.md: ✅ aligned
-- .codexspec/templates/docs/spec-template-simple.md: ✅ aligned
-- .codexspec/templates/docs/spec-template-detailed.md: ✅ aligned
-- .codexspec/templates/docs/tasks-template-simple.md: ✅ aligned（test-first 仅在宪法要求时适用，与本宪法原则 2 一致）
+- .codexspec/templates/docs/tasks-template-simple.md: ✅ aligned（test-first 由原则 8 强制启用）
 - .codexspec/templates/docs/tasks-template-detailed.md: ✅ aligned
-- .claude/commands/*.md: ✅ aligned（命令动态加载 .codexspec/memory/constitution.md，无硬编码原则名）
+- .claude/commands/*.md: ✅ aligned（命令动态加载 constitution.md，无硬编码原则名）
 - README.md: ✅ aligned（技术栈 / 86 测试 / 分支流程与宪法一致）
 - CLAUDE.md: ⚠ issues: 第 2 行引用 `@.codexspec/memory/constitution.md`，但该路径被 .gitignore
   的 `.*/` 规则忽略，不随仓库提交；新克隆仓库将缺失宪法文件。未修改，等待用户决定。
@@ -30,6 +23,14 @@ Template Consistency Check:
 Deferred TODOs:
 - TODO(USER): 是否将 .codexspec/ 从 .gitignore 的 `.*/` 忽略中放行，使宪法可随仓库版本化？
   （当前未改，仅标记）
+
+---
+历史记录 (Historical)
+Version: placeholder (无版本) → 1.0.0
+Bump Rationale: MAJOR — 将通用占位宪法替换为项目专属宪法（7 条原则 + 技术栈/规范/工作流/门禁/安全/性能/文档/治理）。
+Changes:
+- 重定义 6 通用原则 → 7 项目原则（模块边界/行为驱动测试/领域边界/uTools 契约/流式渲染/文档同步/简洁优先）
+- 新增 技术栈/代码规范/开发工作流/质量门禁/安全要求/性能标准/文档要求/治理 章节
 -->
 
 > **最高权威 (SUPREME AUTHORITY)**：本宪法定义本项目的最高治理原则。所有代码改动与决策 MUST 符合本宪法；
@@ -65,8 +66,10 @@ Deferred TODOs:
 - 函数签名变更时 MUST 全局搜索所有调用点，并核对 `expect(mockFn).toHaveBeenCalledWith(...)`
   断言覆盖全部参数。
 - 测试基准：当前 **86** 个测试；新增模块时测试数随之增长并在文档同步。
+- 测试顺序遵循原则 8（强制严格 TDD）：MUST 先编写失败测试（RED），再写最小实现（GREEN），
+  最后在测试保护下重构（REFACTOR）；MUST NOT 先写实现再补测试。
 - 理由：历史踩坑——`use-word-query` 漏传 `db` 参数，因被测函数被 `vi.fn()` mock 而未执行真实逻辑，
-  导致自动保存静默失败。Mock 会掩盖参数错误，故关键路径 MUST 有真实集成测试。
+  导致自动保存静默失败。Mock 会掩盖参数错误，故关键路径 MUST 有真实集成测试；且测试 MUST 先于实现。
 
 ### 3. 领域边界不可逾越
 
@@ -112,6 +115,22 @@ Deferred TODOs:
 - 修改已有代码时 MUST 只动必须动之处、匹配现有风格；移除因改动产生的孤立 import / 变量 / 函数，
   但不动原本就存在的死代码（除非明确要求）。
 - 理由：降低复杂度与返工风险（用户编码准则）。
+
+### 8. 强制严格 TDD（测试驱动开发，不可妥协）
+
+- 所有生产代码（新增模块、修改逻辑、UI 交互行为）MUST 采用严格 TDD 红-绿-重构循环：
+  1. **RED**：先为待实现行为编写失败的测试；运行测试确认其失败（错误与预期一致）。
+  2. **GREEN**：仅编写使测试通过的最小实现，MUST NOT 超出测试所需。
+  3. **REFACTOR**：在测试保护下清理代码，保持绿；MUST NOT 改变可观察行为。
+- 测试文件（`<module>/index.test.js` / `index.test.jsx`）MUST 在实现文件（`<module>/index.js` /
+  `index.jsx`）**之前**创建与提交；MUST NOT 先写实现再补测试。
+- 每个实现任务 MUST 存在先于它的失败测试；无失败测试的实现任务 MUST NOT 提交。
+- 关键持久化路径（依据原则 2）仍 MUST 为非 mock 集成测试，且同样遵循先红后绿。
+- **适用范围**：逻辑与可观测行为——数据函数、写入门控、勾选/批量删除交互、组件渲染与事件。
+- **豁免**：纯视觉/布局 CSS（如返回按钮定位修复）无法以单测先红；以手动/截图核验替代，但 MUST
+  在实现**前**明确记录验证准则（含暗色模式），且不得绕过原则 6 的文档同步。
+- 理由：历史踩坑表明 mock 会掩盖参数错误（原则 2 依据）；先写实现再补测试易漏边界、且易用 mock
+  伪造通过。故将 TDD 上升为不可妥协的必经流程，从流程上杜绝「实现先行」。
 
 ## 技术栈 (Technology Stack)
 
@@ -208,4 +227,4 @@ Deferred TODOs:
 - **冲突处理**：用户请求与宪法冲突时，MUST 停止并说明违反的原则，提出合规替代方案，须用户显式确认方可覆盖。
 - **所有 PR / 审查 MUST 验证合规**。
 
-**版本**: 1.0.0 | **批准日期**: 2026-07-06 | **最后修订**: 2026-07-06
+**版本**: 1.1.0 | **批准日期**: 2026-07-06 | **最后修订**: 2026-07-07
