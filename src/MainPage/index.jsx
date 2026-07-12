@@ -10,6 +10,22 @@ const VIEW_MAIN = 'main'
 const VIEW_SETTINGS = 'settings'
 const VIEW_HISTORY = 'history'
 
+function BackIcon () {
+  return (
+    <svg
+      className="back-icon"
+      viewBox="0 0 1024 1024"
+      version="1.1"
+      xmlns="http://www.w3.org/2000/svg"
+      width="16"
+      height="16"
+      fill="currentColor"
+    >
+      <path d="M631.04 161.941333a42.666667 42.666667 0 0 1 63.061333 57.386667l-2.474666 2.730667-289.962667 292.245333 289.706667 287.402667a42.666667 42.666667 0 0 1 2.730666 57.6l-2.474666 2.752a42.666667 42.666667 0 0 1-57.6 2.709333l-2.752-2.474667-320-317.44a42.666667 42.666667 0 0 1-2.709334-57.6l2.474667-2.752 320-322.56z" />
+    </svg>
+  )
+}
+
 // 尝试导入 HistoryView，如果失败会在这里抛出
 export default function MainPage () {
   const [word, setWord] = useState('')
@@ -51,7 +67,10 @@ export default function MainPage () {
     return (
       <div className="main-page">
         <header className="main-header">
-          <button className="back-btn" onClick={() => setCurrentView(VIEW_MAIN)}>← 返回</button>
+          <button className="back-btn" onClick={() => setCurrentView(VIEW_MAIN)}>
+            <BackIcon />
+            返回
+          </button>
         </header>
         <div className="settings-panel">
           <h1 className="settings-title">设置</h1>
@@ -91,7 +110,10 @@ export default function MainPage () {
     return (
       <div className="main-page">
         <header className="main-header">
-          <button className="back-btn" onClick={() => setCurrentView(VIEW_MAIN)}>← 返回</button>
+          <button className="back-btn" onClick={() => setCurrentView(VIEW_MAIN)}>
+            <BackIcon />
+            返回
+          </button>
         </header>
         <HistoryView />
       </div>
