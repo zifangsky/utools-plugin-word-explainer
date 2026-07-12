@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
+/* global SpeechSynthesisUtterance */
 import { getHistoryRecords, getDetailRecord, deleteQueryRecords } from '../query-history/index.js'
 import { MarkdownView } from '../markdown-view/index.jsx'
 import './index.css'
@@ -80,16 +81,6 @@ export function HistoryView () {
     setLoadingDetail(false)
   }, [])
 
-  const handleSearch = useCallback(() => {
-    // 搜索通过 useMemo 实时过滤
-  }, [])
-
-  const handleSearchKeyDown = useCallback((e) => {
-    if (e.key === 'Enter') {
-      handleSearch()
-    }
-  }, [handleSearch])
-
   const handlePlay = useCallback((word, e) => {
     e.stopPropagation()
     if (!window.speechSynthesis) return
@@ -128,9 +119,11 @@ export function HistoryView () {
     const ids = [...selectedIds]
     if (window.confirm(`确定删除 ${ids.length} 条记录吗？`)) {
       const db = getDb()
-      if (db) deleteQueryRecords(db, ids)
-      const result = getHistoryRecords(db, timeFilter)
-      setRecords(result)
+      if (db) {
+        deleteQueryRecords(db, ids)
+        const result = getHistoryRecords(db, timeFilter)
+        setRecords(result)
+      }
       setSelectedId(null)
       setDetailContent(null)
       setSelectedIds(new Set())
@@ -138,33 +131,25 @@ export function HistoryView () {
   }, [selectedIds, timeFilter])
 
   return (
-    <div className="history-view" data-testid="history-view">
+    <div className='history-view' data-testid='history-view'>
       {/* 左栏 */}
-      <div className="history-left" data-testid="history-left">
+      <div className='history-left' data-testid='history-left'>
         {/* 搜索 + 筛选 */}
-        <div className="history-left-header">
-          <div className="history-search-row">
+        <div className='history-left-header'>
+          <div className='history-search-row'>
             <input
-              type="text"
-              className="history-search-input"
-              placeholder="搜索..."
+              type='text'
+              className='history-search-input'
+              placeholder='搜索...'
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={handleSearchKeyDown}
-              data-testid="history-search-input"
+              data-testid='history-search-input'
             />
-            <button
-              className="history-search-btn"
-              onClick={handleSearch}
-              data-testid="history-search-btn"
-            >
-              搜索
-            </button>
             <select
-              className="history-filter-select"
+              className='history-filter-select'
               value={timeFilter}
               onChange={(e) => setTimeFilter(e.target.value)}
-              data-testid="time-filter-select"
+              data-testid='time-filter-select'
             >
               {TIME_OPTIONS.map(opt => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -173,9 +158,9 @@ export function HistoryView () {
           </div>
         </div>
         {/* 单词卡片列表 */}
-        <div className="history-card-list">
+        <div className='history-card-list'>
           {filteredRecords.length === 0 && (
-            <div className="history-empty">暂无查词记录</div>
+            <div className='history-empty'>暂无查词记录</div>
           )}
           {filteredRecords.map((rec) => (
             <div
@@ -184,56 +169,56 @@ export function HistoryView () {
               onClick={() => handleSelect(rec)}
               data-selected={selectedId === rec.detailDocId ? 'true' : 'false'}
             >
-              <input
-                type="checkbox"
-                className="history-card-checkbox"
-                checked={selectedIds.has(rec.detailDocId)}
-                onChange={() => toggleSelect(rec.detailDocId)}
-                onClick={(e) => e.stopPropagation()}
-                data-testid={`select-${rec.detailDocId}`}
-              />
-              <div className="history-card-header">
-                <span className="history-card-word">{rec.word}</span>
-                {rec.phonetic && <span className="history-card-phonetic">{rec.phonetic}</span>}
+              <div className='history-card-header'>
+                <input
+                  type='checkbox'
+                  className='history-card-checkbox'
+                  checked={selectedIds.has(rec.detailDocId)}
+                  onChange={() => toggleSelect(rec.detailDocId)}
+                  onClick={(e) => e.stopPropagation()}
+                  data-testid={`select-${rec.detailDocId}`}
+                />
+                <span className='history-card-word'>{rec.word}</span>
+                {rec.phonetic && <span className='history-card-phonetic'>{rec.phonetic}</span>}
                 <button
                   className={`history-card-play ${playingWord === rec.word ? 'playing' : ''}`}
-                  title="播放读音"
+                  title='播放读音'
                   onClick={(e) => handlePlay(rec.word, e)}
-                  data-testid="history-card-play"
+                  data-testid='history-card-play'
                 >
                   ▶
                 </button>
               </div>
-              <div className="history-card-meanings">
+              <div className='history-card-meanings'>
                 {(rec.chineseMeanings || []).join(';')}
               </div>
-              <div className="history-card-time">{formatTime(rec.timestamp)}</div>
+              <div className='history-card-time'>{formatTime(rec.timestamp)}</div>
             </div>
           ))}
         </div>
         {/* 底部操作栏 */}
-        <div className="history-op-bar">
-          <label className="history-select-all">
+        <div className='history-op-bar'>
+          <label className='history-select-all'>
             <input
-              type="checkbox"
+              type='checkbox'
               checked={allSelected}
               onChange={toggleSelectAll}
-              data-testid="select-all-checkbox"
+              data-testid='select-all-checkbox'
             />
             全选
           </label>
           <button
-            className="history-del-btn"
+            className='history-del-btn'
             disabled={selectedIds.size === 0}
             onClick={handleDelete}
-            data-testid="delete-selected-btn"
+            data-testid='delete-selected-btn'
           >
             删除
           </button>
           <button
-            className="history-practice-btn"
+            className='history-practice-btn'
             disabled
-            data-testid="practice-btn"
+            data-testid='practice-btn'
           >
             练习
           </button>
@@ -241,13 +226,13 @@ export function HistoryView () {
       </div>
 
       {/* 右栏 */}
-      <div className="history-right" data-testid="history-right">
-        {loadingDetail && <div className="history-right-loading">加载中...</div>}
+      <div className='history-right' data-testid='history-right'>
+        {loadingDetail && <div className='history-right-loading'>加载中...</div>}
         {!loadingDetail && !detailContent && (
-          <div className="history-right-placeholder">请选择一个单词查看详情</div>
+          <div className='history-right-placeholder'>请选择一个单词查看详情</div>
         )}
         {!loadingDetail && detailContent && (
-          <div className="history-right-content">
+          <div className='history-right-content'>
             <MarkdownView content={detailContent} />
           </div>
         )}

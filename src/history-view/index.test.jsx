@@ -11,7 +11,7 @@ vi.mock('../query-history/index.js', () => ({
 }))
 
 vi.mock('../markdown-view/index.jsx', () => ({
-  MarkdownView: vi.fn(({ content }) => <div data-testid="markdown-view">{content}</div>)
+  MarkdownView: vi.fn(({ content }) => <div data-testid='markdown-view'>{content}</div>)
 }))
 
 const mockRecords = [
@@ -96,14 +96,11 @@ describe('HistoryView', () => {
     expect(queryHistory.getHistoryRecords).toHaveBeenCalledWith(expect.anything(), '1d')
   })
 
-  it('搜索框过滤单词列表', () => {
+  it('搜索框实时过滤单词列表', () => {
     render(<HistoryView />)
 
     const searchInput = screen.getByTestId('history-search-input')
-    const searchBtn = screen.getByTestId('history-search-btn')
-
     fireEvent.change(searchInput, { target: { value: 'hello' } })
-    fireEvent.click(searchBtn)
 
     // 只显示 hello，不显示 world
     expect(screen.getByText('hello')).toBeInTheDocument()
@@ -113,14 +110,22 @@ describe('HistoryView', () => {
   it('搜索框为空时显示全部', () => {
     render(<HistoryView />)
 
-    const searchBtn = screen.getByTestId('history-search-btn')
-    fireEvent.click(searchBtn)
+    const searchInput = screen.getByTestId('history-search-input')
+    fireEvent.change(searchInput, { target: { value: '' } })
 
     expect(screen.getByText('hello')).toBeInTheDocument()
     expect(screen.getByText('world')).toBeInTheDocument()
   })
 
   describe('批量选择与删除', () => {
+    it('复选框位于单词卡片的 header 内，与单词在同一行', () => {
+      render(<HistoryView />)
+
+      const card = screen.getByText('hello').closest('.history-card')
+      const header = card.querySelector('.history-card-header')
+      expect(header.querySelector('.history-card-checkbox')).not.toBeNull()
+    })
+
     it('初始删除按钮禁用，勾选卡片复选框后可用', () => {
       render(<HistoryView />)
 

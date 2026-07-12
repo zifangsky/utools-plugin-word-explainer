@@ -3,6 +3,10 @@ import '@testing-library/jest-dom'
 import { render, fireEvent, screen } from '@testing-library/react'
 import MainPage from './index.jsx'
 
+import { useWordQuery } from '../use-word-query/index.js'
+import { getPreferredModel, setPreferredModel } from '../model-preference/index.js'
+import { setSaveQueryHistory } from '../history-preference/index.js'
+
 vi.mock('../use-word-query/index.js', () => ({
   useWordQuery: vi.fn()
 }))
@@ -18,12 +22,8 @@ vi.mock('../history-preference/index.js', () => ({
 }))
 
 vi.mock('../history-view/index.jsx', () => ({
-  HistoryView: () => <div data-testid="history-view-mock">查词历史</div>
+  HistoryView: () => <div data-testid='history-view-mock'>查词历史</div>
 }))
-
-import { useWordQuery } from '../use-word-query/index.js'
-import { getPreferredModel, setPreferredModel } from '../model-preference/index.js'
-import { setSaveQueryHistory } from '../history-preference/index.js'
 
 function setupUseWordQuery (overrides = {}) {
   useWordQuery.mockReturnValue({
@@ -119,8 +119,9 @@ describe('MainPage 主界面', () => {
 
   it('选择模型后调用 setPreferredModel', async () => {
     // 使用同步 resolve 的 mock 让 models 在首次渲染即可用
+    const models = [{ id: 'model-a', label: 'Model A' }, { id: 'model-b', label: 'Model B' }]
     window.utools.allAiModels = vi.fn().mockImplementation(() => ({
-      then: (cb) => { cb([{ id: 'model-a', label: 'Model A' }, { id: 'model-b', label: 'Model B' }]); return { catch: () => {} } }
+      then: (cb) => { cb(models); return { catch: () => {} } }
     }))
 
     const { container } = render(<MainPage />)
@@ -151,18 +152,39 @@ describe('MainPage 设置面板', () => {
     getPreferredModel.mockReturnValue('saved-model')
   })
 
+  it('设置页返回按钮显示 SVG 图标', () => {
+    render(<MainPage />)
+    fireEvent.click(screen.getByTitle('设置'))
+
+    const backBtn = screen.getByRole('button', { name: /返回/ })
+    expect(backBtn.querySelector('.back-icon')).not.toBeNull()
+  })
+
+  it('返回图标使用清理版 SVG（currentColor + viewBox 0 0 800 800 + 双 path）', () => {
+    render(<MainPage />)
+    fireEvent.click(screen.getByTitle('设置'))
+
+    const backBtn = screen.getByRole('button', { name: /返回/ })
+    const icon = backBtn.querySelector('.back-icon')
+    expect(icon).not.toBeNull()
+    expect(icon.getAttribute('viewBox')).toBe('0 0 800 800')
+    expect(icon.getAttribute('fill')).toBe('currentColor')
+    const paths = icon.querySelectorAll('path')
+    expect(paths.length).toBe(2)
+  })
+
   it('点击齿轮按钮切换到设置页面', () => {
     render(<MainPage />)
     fireEvent.click(screen.getByTitle('设置'))
 
     expect(screen.getByText('AI 模型选择')).not.toBeNull()
-    expect(screen.getByText('← 返回')).not.toBeNull()
+    expect(screen.getByText('返回')).not.toBeNull()
   })
 
   it('点击返回按钮回到主界面', () => {
     render(<MainPage />)
     fireEvent.click(screen.getByTitle('设置'))
-    fireEvent.click(screen.getByText('← 返回'))
+    fireEvent.click(screen.getByText('返回'))
 
     expect(screen.getByPlaceholderText('输入英文单词...')).not.toBeNull()
   })
@@ -204,13 +226,13 @@ describe('MainPage 历史面板', () => {
     fireEvent.click(screen.getByTitle('查词历史'))
 
     expect(screen.getByTestId('history-view-mock')).not.toBeNull()
-    expect(screen.getByText('← 返回')).not.toBeNull()
+    expect(screen.getByText('返回')).not.toBeNull()
   })
 
   it('点击历史面板返回按钮回到主界面', () => {
     render(<MainPage />)
     fireEvent.click(screen.getByTitle('查词历史'))
-    fireEvent.click(screen.getByText('← 返回'))
+    fireEvent.click(screen.getByText('返回'))
 
     expect(screen.getByPlaceholderText('输入英文单词...')).not.toBeNull()
   })

@@ -16,7 +16,6 @@
 - **摘要文档**：`_id="history_summary"` 的单一文档，存储所有查词记录的摘要数组。每条含 word、phonetic、chineseMeanings、timestamp、detailDocId。最大 5000 条，超出时删除最旧记录。
 - **详情文档**：`_id="detail/<timestamp>_<word>"` 的独立文档，存储单条单词的完整 7 板块 Markdown 解释。同词重新查询时先删除旧文档再创建新文档。总数上限 5000 个。
 - **历史时间筛选**：按 1d/3d/7d/15d/30d/all 过滤查词历史，默认 7 天。
-- **查词提示词模板**：发送给 AI 的 system prompt，源自 Claude Code skill 的 SKILL.md，定义了 7 板块的精确格式、例句要求、缩进规则、加粗规则等。
 
 ## 与 uTools 平台的关系
 

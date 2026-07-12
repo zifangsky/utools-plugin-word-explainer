@@ -16,7 +16,7 @@ function renderNodes (nodes, level) {
     <ul className={`md-list md-list-level-${level}`}>
       {nodes.map((node, i) => (
         <li key={i}>
-          <span className="md-li-content">{renderInline(node.content)}</span>
+          <span className='md-li-content'>{renderInline(node.content)}</span>
           {renderNodes(node.children, level + 1)}
         </li>
       ))}
@@ -107,14 +107,14 @@ export const MarkdownView = memo(function MarkdownView ({ content }) {
     return blocks.map((block, idx) => {
       switch (block.type) {
         case 'hr':
-          return <hr key={idx} className="md-hr" />
+          return <hr key={idx} className='md-hr' />
 
         case 'list':
-          return <div key={idx} className="md-list-wrapper">{renderListBlock(block.items)}</div>
+          return <div key={idx} className='md-list-wrapper'>{renderListBlock(block.items)}</div>
 
         case 'paragraph': {
           const paraText = block.lines.join('\n')
-          return <p key={idx} className="md-paragraph">{renderInline(paraText)}</p>
+          return <p key={idx} className='md-paragraph'>{renderInline(paraText)}</p>
         }
 
         default:
@@ -123,5 +123,5 @@ export const MarkdownView = memo(function MarkdownView ({ content }) {
     })
   }, [text])
 
-  return <div className="markdown-view">{elements}</div>
+  return <div className='markdown-view'>{elements}</div>
 })
