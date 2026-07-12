@@ -35,11 +35,12 @@ dist-ssr
 # Test files
 local_test
 
-# Dot directories (project-level config/tooling)
+# Dot directories (project-level config/tooling) — 默认忽略所有点目录
 .*/
 
-# 跟踪项目宪法与 CodexSpec 代理配置（覆盖上面的 .*/ 规则）
+# 显式追踪 CodexSpec 工作区（覆盖上面的 .*/ 规则，含全部子目录与产物）
 !.codexspec/
+!.codexspec/**
 
 # Public build artifacts (generated, not source)
 public/index.html
