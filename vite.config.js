@@ -5,10 +5,5 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   base: './',
-  assetsInclude: ['.ico'],
-  publicDir: false,
-  build: {
-    outDir: 'public',
-    emptyOutDir: false
-  }
+  assetsInclude: ['.ico']
 })
