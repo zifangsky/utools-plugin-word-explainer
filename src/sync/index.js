@@ -17,7 +17,8 @@ export function getFlomoTags () {
 }
 
 export function setFlomoTags (tags) {
-  window.utools.dbStorage.setItem(FLOMO_TAGS_KEY, tags.trim())
+  const trimmed = tags == null ? '' : tags.trim()
+  window.utools.dbStorage.setItem(FLOMO_TAGS_KEY, trimmed)
 }
 
 export function buildFlomoContent (word, result, tags) {

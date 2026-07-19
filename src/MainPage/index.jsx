@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useWordQuery } from '../use-word-query/index.js'
 import { MarkdownView } from '../markdown-view/index.jsx'
 import { HistoryView } from '../history-view/index.jsx'
@@ -50,6 +50,7 @@ export default function MainPage () {
   const [syncMessage, setSyncMessage] = useState('')
   const [endpoint, setEndpoint] = useState(() => getFlomoApiEndpoint())
   const [tags, setTags] = useState(() => getFlomoTags())
+  const timeoutRef = useRef(null)
 
   useEffect(() => {
     const preferred = getPreferredModel()
@@ -59,6 +60,12 @@ export default function MainPage () {
       window.utools.allAiModels().then(list => {
         setModels(list || [])
       }).catch(() => {})
+    }
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
     }
   }, [])
 
@@ -80,16 +87,17 @@ export default function MainPage () {
   }
 
   const handleSyncFlomo = async () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current)
     setSyncStatus('syncing')
     setSyncMessage('')
     const res = await syncToFlomo(word, result)
     if (res.success) {
       setSyncStatus('success')
-      setTimeout(() => setSyncStatus('idle'), 2000)
+      timeoutRef.current = setTimeout(() => setSyncStatus('idle'), 2000)
     } else {
       setSyncStatus('error')
       setSyncMessage(res.message || '同步失败')
-      setTimeout(() => setSyncStatus('idle'), 3000)
+      timeoutRef.current = setTimeout(() => setSyncStatus('idle'), 3000)
     }
   }
 

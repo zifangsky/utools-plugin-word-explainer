@@ -75,6 +75,16 @@ describe('flomo preferences', () => {
       setFlomoTags('')
       expect(mockDbStorage.setItem).toHaveBeenCalledWith('flomoTags', '')
     })
+
+    it('null 输入安全处理为空字符串', () => {
+      setFlomoTags(null)
+      expect(mockDbStorage.setItem).toHaveBeenCalledWith('flomoTags', '')
+    })
+
+    it('undefined 输入安全处理为空字符串', () => {
+      setFlomoTags(undefined)
+      expect(mockDbStorage.setItem).toHaveBeenCalledWith('flomoTags', '')
+    })
   })
 })
 
