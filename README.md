@@ -22,6 +22,9 @@ npm test
 
 # 生产构建
 npm run build
+
+# 构建并复制到 public/（uTools 应用商店打包用）
+npm run deploy
 ```
 
 开发流程：
@@ -46,7 +49,7 @@ src/
 ├── query-history/              # 查词历史数据层（save/getHistoryRecords/getDetailRecord/deleteQueryRecords）
 ├── history-view/               # 查词历史 UI（搜索、时间筛选、单词卡片、详情）
 ├── mcp-tools/                  # MCP 工具 handler
-├── sync/                       # flomo 同步（偏好存取 + 内容构建 + API 调用）
+├── sync/                       # flomo 同步（数据层 + useFlomoSync Hook）
 assets/
 ├── logo/                       # 插件 Logo 源文件
 ├── flomo_favicon.ico           # flomo 同步按钮图标

@@ -10,6 +10,7 @@ React + Vite 工程，在 uTools 平台中运行的桌面插件。用户输入�
 ```bash
 npm run dev      # 启动开发服务器 (localhost:5173)
 npm run build    # 生产构建到 dist/
+npm run deploy   # 构建 + 复制产物到 public/（uTools 应用商店打包用）
 npm test         # 运行 141 个测试 (vitest)
 ```
 
@@ -49,7 +50,8 @@ src/
 │   ├── index.css               # 左栏搜索/卡片样式、右栏详情、暗色模式
 │   └── index.test.jsx
 ├── sync/
-│   ├── index.js                # flomo 同步 — get/set 端点、get/set 标签、buildFlomoContent、syncToFlomo
+│   ├── index.js                # flomo 同步数据层 — get/set 端点/标签、buildFlomoContent、syncToFlomo
+│   ├── useFlomoSync.js         # 同步状态管理 Hook — syncStatus 状态机 + 定时器生命周期
 │   └── index.test.js
 └── mcp-tools/
     ├── index.js                # createExplainWordHandler 工厂函数 — MCP 工具 handler
@@ -72,9 +74,8 @@ public/preload/
 ## 分支规则（红线）
 
 - **禁止直接提交到 main 分支**，所有修改必须通过 PR 合并
-- 新功能：`feat/<功能名>` 分支（如 `feat/mcp-tools`）
-- Bug 修复：`bug/<问题描述>` 分支（如 `bug/settings-alignment`）
-- 合并前需至少 1 人 review approve（GitHub 分支保护已开启）
+- 分支命名按改动类型：`feat/<desc>`（新功能）、`fix/<desc>`（Bug修复）、`docs/<desc>`（文档）、`chore/<desc>`（版本/构建/杂项）、`refactor/<desc>`（重构）、`test/<desc>`（测试）、`style/<desc>`（样式）
+- 提交前 MUST 执行 `git branch --show-current` 确认为分支
 - 合并后删除源分支，保持仓库整洁
 
 ## 约定
@@ -97,7 +98,7 @@ public/preload/
 
 ### 领域文档
 
-单上下文布局：仓库根目录 `CONTEXT.md` + `docs/adr/`。详见 `docs/agents/domain.md`。
+单上下文布局：仓库根目录 `CONTEXT.md` + `docs/agents/`。详见 `docs/agents/domain.md`。
 
 ## MCP Tools: code-review-graph
 
