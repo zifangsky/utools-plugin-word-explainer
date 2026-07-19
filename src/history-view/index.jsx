@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 /* global SpeechSynthesisUtterance */
 import { getHistoryRecords, getDetailRecord, deleteQueryRecords } from '../query-history/index.js'
 import { MarkdownView } from '../markdown-view/index.jsx'
-import { syncToFlomo, getFlomoApiEndpoint } from '../sync/index.js'
+import { useFlomoSync } from '../sync/useFlomoSync.js'
 import flomoIcon from '../../assets/flomo_favicon.ico'
 import './index.css'
 
@@ -41,11 +41,8 @@ export function HistoryView () {
   const [loadingDetail, setLoadingDetail] = useState(false)
   const [playingWord, setPlayingWord] = useState(null)
   const [selectedIds, setSelectedIds] = useState(() => new Set())
-  const [endpoint] = useState(() => getFlomoApiEndpoint())
-  const [syncStatus, setSyncStatus] = useState('idle')
-  const [syncMessage, setSyncMessage] = useState('')
   const [selectedWord, setSelectedWord] = useState('')
-  const timeoutRef = useRef(null)
+  const { endpoint, syncStatus, handleSync, resetSync, buildTitle } = useFlomoSync(selectedWord, detailContent)
 
   // 加载记录
   useEffect(() => {
@@ -57,16 +54,8 @@ export function HistoryView () {
     setSelectedId(null)
     setSelectedWord('')
     setDetailContent(null)
-    setSyncStatus('idle')
-    setSyncMessage('')
+    resetSync()
   }, [timeFilter])
-
-  // 组件卸载时清理定时器
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current)
-    }
-  }, [])
 
   // 搜索过滤（前端过滤）
   const filteredRecords = useMemo(() => {
@@ -85,8 +74,7 @@ export function HistoryView () {
     setSelectedWord(record.word)
     setLoadingDetail(true)
     setDetailContent(null)
-    setSyncStatus('idle')
-    setSyncMessage('')
+    resetSync()
 
     const db = getDb()
     if (!db) {
@@ -112,25 +100,6 @@ export function HistoryView () {
     window.speechSynthesis.cancel()
     window.speechSynthesis.speak(utterance)
   }, [])
-
-  // 同步当前详情到 flomo
-  const handleSyncFlomo = useCallback(async () => {
-    if (!selectedWord || !detailContent) return
-
-    if (timeoutRef.current) clearTimeout(timeoutRef.current)
-    setSyncStatus('syncing')
-    setSyncMessage('')
-
-    const res = await syncToFlomo(selectedWord, detailContent)
-    if (res.success) {
-      setSyncStatus('success')
-      timeoutRef.current = setTimeout(() => setSyncStatus('idle'), 2000)
-    } else {
-      setSyncStatus('error')
-      setSyncMessage(res.message || '同步失败')
-      timeoutRef.current = setTimeout(() => setSyncStatus('idle'), 3000)
-    }
-  }, [selectedWord, detailContent])
 
   // 勾选/取消单个卡片
   const toggleSelect = useCallback((detailDocId) => {
@@ -166,8 +135,7 @@ export function HistoryView () {
       setSelectedId(null)
       setSelectedWord('')
       setDetailContent(null)
-      setSyncStatus('idle')
-      setSyncMessage('')
+      resetSync()
       setSelectedIds(new Set())
     }
   }, [selectedIds, timeFilter])
@@ -284,9 +252,9 @@ export function HistoryView () {
                   <button
                     className={`history-right-sync-flomo-btn ${syncStatus}`}
                     data-testid='history-sync-flomo-btn'
-                    onClick={handleSyncFlomo}
+                    onClick={handleSync}
                     disabled={syncStatus === 'syncing'}
-                    title={syncStatus === 'syncing' ? '同步中...' : syncStatus === 'success' ? '已同步' : syncStatus === 'error' ? syncMessage : '同步到 flomo'}
+                    title={buildTitle()}
                   >
                     <img src={flomoIcon} alt='flomo' className='sync-flomo-icon' />
                   </button>

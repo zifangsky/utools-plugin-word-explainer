@@ -200,10 +200,11 @@ describe('MainPage flomo 同步', () => {
     syncToFlomo.mockReturnValue(new Promise((resolve) => { resolveSync = resolve }))
 
     render(<MainPage />)
+    fireEvent.change(screen.getByPlaceholderText('输入英文单词...'), { target: { value: 'test' } })
     const btn = screen.getByTestId('sync-flomo-btn')
     fireEvent.click(btn)
 
-    expect(syncToFlomo).toHaveBeenCalledWith('', '详解内容')
+    expect(syncToFlomo).toHaveBeenCalledWith('test', '详解内容')
     expect(btn).toHaveClass('syncing')
 
     // resolve
@@ -218,6 +219,7 @@ describe('MainPage flomo 同步', () => {
     syncToFlomo.mockResolvedValue({ success: true })
 
     render(<MainPage />)
+    fireEvent.change(screen.getByPlaceholderText('输入英文单词...'), { target: { value: 'test' } })
     fireEvent.click(screen.getByTestId('sync-flomo-btn'))
 
     await act(async () => {
@@ -236,6 +238,7 @@ describe('MainPage flomo 同步', () => {
 
     render(<MainPage />)
 
+    fireEvent.change(screen.getByPlaceholderText('输入英文单词...'), { target: { value: 'test' } })
     fireEvent.click(screen.getByTestId('sync-flomo-btn'))
 
     await act(async () => {
