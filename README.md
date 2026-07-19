@@ -36,7 +36,7 @@ npm run build
 ```
 src/
 ├── App.jsx                     # 根组件
-├── MainPage/                   # 主界面 + 设置面板
+├── main-page/                   # 主界面 + 设置面板
 ├── prompt-template/            # 7 板块提示词模板
 ├── ai-call/                    # AI 调用封装（流式）
 ├── markdown-view/              # Markdown 富文本渲染
@@ -46,11 +46,19 @@ src/
 ├── query-history/              # 查词历史数据层（save/getHistoryRecords/getDetailRecord/deleteQueryRecords）
 ├── history-view/               # 查词历史 UI（搜索、时间筛选、单词卡片、详情）
 ├── mcp-tools/                  # MCP 工具 handler
+├── sync/                       # flomo 同步（偏好存取 + 内容构建 + API 调用）
+assets/
+├── logo/                       # 插件 Logo 源文件
+├── flomo_favicon.ico           # flomo 同步按钮图标
+public/
+├── logo.png                    # uTools 插件 Logo（运行时）
+├── plugin.json                 # 插件配置
+└── preload/                    # Node.js preload 脚本
 ```
 
 ## 技术栈
 
-- Vitest 4 + Testing Library (106 个测试)
+- Vitest 4 + Testing Library (141 个测试)
 - uTools AI API（流式调用）
 - uTools dbStorage（偏好持久化）
 - uTools MCP Tools（registerTool）

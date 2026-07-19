@@ -1,11 +1,12 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import '@testing-library/jest-dom'
-import { render, fireEvent, screen } from '@testing-library/react'
+import { render, fireEvent, screen, act } from '@testing-library/react'
 import MainPage from './index.jsx'
 
 import { useWordQuery } from '../use-word-query/index.js'
 import { getPreferredModel, setPreferredModel } from '../model-preference/index.js'
 import { setSaveQueryHistory } from '../history-preference/index.js'
+import { syncToFlomo, getFlomoApiEndpoint, getFlomoTags } from '../sync/index.js'
 
 vi.mock('../use-word-query/index.js', () => ({
   useWordQuery: vi.fn()
@@ -23,6 +24,14 @@ vi.mock('../history-preference/index.js', () => ({
 
 vi.mock('../history-view/index.jsx', () => ({
   HistoryView: () => <div data-testid='history-view-mock'>查词历史</div>
+}))
+
+vi.mock('../sync/index.js', () => ({
+  syncToFlomo: vi.fn(),
+  getFlomoApiEndpoint: vi.fn(() => ''),
+  getFlomoTags: vi.fn(() => '#English/vocabulary'),
+  setFlomoApiEndpoint: vi.fn(),
+  setFlomoTags: vi.fn()
 }))
 
 function setupUseWordQuery (overrides = {}) {
@@ -144,6 +153,107 @@ describe('MainPage 主界面', () => {
   })
 })
 
+describe('MainPage flomo 同步', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setupWindowUtools()
+    getFlomoApiEndpoint.mockReturnValue('')
+    getFlomoTags.mockReturnValue('#English/vocabulary')
+    syncToFlomo.mockResolvedValue({ success: true })
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('有查词结果 + 有端点 → flomo 同步按钮可见', () => {
+    setupUseWordQuery({ result: '详解内容' })
+    getFlomoApiEndpoint.mockReturnValue('https://flomoapp.com/api/notes')
+
+    render(<MainPage />)
+    expect(screen.getByTestId('sync-flomo-btn')).toBeInTheDocument()
+  })
+
+  it('有查词结果 + 无端点 → flomo 同步按钮不可见', () => {
+    setupUseWordQuery({ result: '详解内容' })
+    getFlomoApiEndpoint.mockReturnValue('')
+
+    render(<MainPage />)
+    expect(screen.queryByTestId('sync-flomo-btn')).not.toBeInTheDocument()
+  })
+
+  it('有查词结果 + loading 状态 → 同步按钮不可见', () => {
+    setupUseWordQuery({ loading: true, result: '' })
+    getFlomoApiEndpoint.mockReturnValue('https://flomoapp.com/api/notes')
+
+    render(<MainPage />)
+    expect(screen.queryByTestId('sync-flomo-btn')).not.toBeInTheDocument()
+  })
+
+  it('点击同步按钮 → syncToFlomo 被调用，按钮进入 syncing 态', async () => {
+    setupUseWordQuery({ result: '详解内容' })
+    getFlomoApiEndpoint.mockReturnValue('https://flomoapp.com/api/notes')
+
+    // 延迟 resolve 让 syncing 状态可观测
+    let resolveSync
+    syncToFlomo.mockReturnValue(new Promise((resolve) => { resolveSync = resolve }))
+
+    render(<MainPage />)
+    fireEvent.change(screen.getByPlaceholderText('输入英文单词...'), { target: { value: 'test' } })
+    const btn = screen.getByTestId('sync-flomo-btn')
+    fireEvent.click(btn)
+
+    expect(syncToFlomo).toHaveBeenCalledWith('test', '详解内容')
+    expect(btn).toHaveClass('syncing')
+    expect(screen.getByTestId('sync-status-text')).toHaveTextContent('同步中...')
+
+    // resolve
+    await act(async () => {
+      resolveSync({ success: true })
+    })
+  })
+
+  it('syncToFlomo 返回 success → 按钮短暂变绿后恢复', async () => {
+    setupUseWordQuery({ result: '详解内容' })
+    getFlomoApiEndpoint.mockReturnValue('https://flomoapp.com/api/notes')
+    syncToFlomo.mockResolvedValue({ success: true })
+
+    render(<MainPage />)
+    fireEvent.change(screen.getByPlaceholderText('输入英文单词...'), { target: { value: 'test' } })
+    fireEvent.click(screen.getByTestId('sync-flomo-btn'))
+
+    await act(async () => {
+      await vi.runAllTimersAsync()
+    })
+
+    // 2s 后恢复 idle，状态文字消失
+    const btn = screen.getByTestId('sync-flomo-btn')
+    expect(btn).toHaveClass('idle')
+    expect(screen.queryByTestId('sync-status-text')).not.toBeInTheDocument()
+  })
+
+  it('syncToFlomo 返回 error → 按钮变红 + 显示错误消息，3s 后恢复', async () => {
+    setupUseWordQuery({ result: '详解内容' })
+    getFlomoApiEndpoint.mockReturnValue('https://flomoapp.com/api/notes')
+    syncToFlomo.mockResolvedValue({ success: false, message: '网络不通' })
+
+    render(<MainPage />)
+
+    fireEvent.change(screen.getByPlaceholderText('输入英文单词...'), { target: { value: 'test' } })
+    fireEvent.click(screen.getByTestId('sync-flomo-btn'))
+
+    await act(async () => {
+      await vi.runAllTimersAsync()
+    })
+
+    // 3s 后恢复
+    const btn = screen.getByTestId('sync-flomo-btn')
+    expect(btn).toHaveClass('idle')
+    expect(screen.queryByTestId('sync-status-text')).not.toBeInTheDocument()
+  })
+})
+
 describe('MainPage 设置面板', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -206,6 +316,16 @@ describe('MainPage 设置面板', () => {
     fireEvent.click(toggle)
 
     expect(setSaveQueryHistory).toHaveBeenCalledWith(false)
+  })
+
+  it('设置页 flomo 标签输入框默认值为 #English/vocabulary', () => {
+    getFlomoTags.mockReturnValue('#English/vocabulary')
+
+    render(<MainPage />)
+    fireEvent.click(screen.getByTitle('设置'))
+
+    const tagsInput = screen.getByPlaceholderText('多个标签以空格分隔，选填')
+    expect(tagsInput).toHaveValue('#English/vocabulary')
   })
 })
 

@@ -65,7 +65,7 @@ Changes:
   （`utools.db` / `dbStorage`）的集成测试。
 - 函数签名变更时 MUST 全局搜索所有调用点，并核对 `expect(mockFn).toHaveBeenCalledWith(...)`
   断言覆盖全部参数。
-- 测试基准：当前 **86** 个测试；新增模块时测试数随之增长并在文档同步。
+- 测试基准：当前 **141** 个测试；新增模块时测试数随之增长并在文档同步。
 - 测试顺序遵循原则 8（强制严格 TDD）：MUST 先编写失败测试（RED），再写最小实现（GREEN），
   最后在测试保护下重构（REFACTOR）；MUST NOT 先写实现再补测试。
 - 理由：历史踩坑——`use-word-query` 漏传 `db` 参数，因被测函数被 `vi.fn()` mock 而未执行真实逻辑，
@@ -102,7 +102,7 @@ Changes:
 
 - 新增 `src/<module>/` 或新增测试后，MUST 同步更新 `CLAUDE.md`（架构图树形结构、依赖方向、
   存储说明）与 `README.md`（项目结构树、测试计数）。
-- 文档中的测试计数 MUST 与实际 `npm test` 通过数一致（当前 **86**），MUST NOT 出现数字脱节。
+- 文档中的测试计数 MUST 与实际 `npm test` 通过数一致（当前 **135**），MUST NOT 出现数字脱节。
 - 版本发布说明 MUST 记录于 `releases/vX.Y.Z.md`，插件介绍于 `releases/plugin-intro.md`。
 - 涉及构建流程变更时 MUST 同步 `package.json` 与 `.gitignore` 的构建产物路径。
 - 理由：历史上 CLAUDE.md/README.md 曾滞后（「58 个测试」实为 86），同步规则避免误导。

@@ -10,7 +10,7 @@ React + Vite 工程，在 uTools 平台中运行的桌面插件。用户输入�
 ```bash
 npm run dev      # 启动开发服务器 (localhost:5173)
 npm run build    # 生产构建到 dist/
-npm test         # 运行 106 个测试 (vitest)
+npm test         # 运行 141 个测试 (vitest)
 ```
 
 ## 架构概述
@@ -20,7 +20,7 @@ src/
 ├── main.jsx                    # React 入口
 ├── main.css                    # 全局样式
 ├── App.jsx                     # 根组件 — utools 生命周期 (onPluginEnter/Out)
-├── MainPage/
+├── main-page/
 │   ├── index.jsx               # 主界面 + 设置面板 + 查词历史视图切换 (编排组件)
 │   └── index.css               # 布局、按钮、结果区、暗色模式
 ├── prompt-template/
@@ -48,6 +48,9 @@ src/
 │   ├── index.jsx               # 查词历史 UI — 搜索、时间筛选、单词卡片列表、详情
 │   ├── index.css               # 左栏搜索/卡片样式、右栏详情、暗色模式
 │   └── index.test.jsx
+├── sync/
+│   ├── index.js                # flomo 同步 — get/set 端点、get/set 标签、buildFlomoContent、syncToFlomo
+│   └── index.test.js
 └── mcp-tools/
     ├── index.js                # createExplainWordHandler 工厂函数 — MCP 工具 handler
     └── index.test.js
@@ -60,10 +63,10 @@ public/preload/
 └── prompt.js                   # CommonJS 版 systemPrompt + buildMessages
 ```
 
-- **依赖方向**：MainPage → useWordQuery / markdown-view / model-preference / history-view，useWordQuery → prompt-template / ai-call / query-history，history-view → query-history / markdown-view，无循环依赖
+- **依赖方向**：main-page → useWordQuery / markdown-view / model-preference / history-view / sync，useWordQuery → prompt-template / ai-call / query-history，history-view → query-history / markdown-view，无循环依赖
 - **MCP 工具**：通过 `utools.registerTool('explain_word', handler)` 在 preload 中注册，handler 流式调用 AI + 每 2s 线性进度上报（15s 上限）
 - **AI 调用**：流式模式 (`utools.ai(option, streamCallback)`)，边接收边渲染
-- **存储**：`utools.dbStorage` (key-value，模型偏好 + 保存查词历史开关 `saveQueryHistory`) + `utools.db` (文档型，查词历史)
+- **存储**：`utools.dbStorage` (key-value，模型偏好 `preferredModel` + 保存查词历史开关 `saveQueryHistory` + flomo 端点 `flomoApiEndpoint` + flomo 标签 `flomoTags`) + `utools.db` (文档型，查词历史)
 - **渲染**：自定义 markdown 解析器，支持 3 层嵌套列表
 
 ## 分支规则（红线）

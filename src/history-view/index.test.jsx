@@ -1,8 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import '@testing-library/jest-dom'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 import { HistoryView } from './index.jsx'
 import * as queryHistory from '../query-history/index.js'
+import { syncToFlomo, getFlomoApiEndpoint } from '../sync/index.js'
 
 vi.mock('../query-history/index.js', () => ({
   getHistoryRecords: vi.fn(),
@@ -12,6 +13,11 @@ vi.mock('../query-history/index.js', () => ({
 
 vi.mock('../markdown-view/index.jsx', () => ({
   MarkdownView: vi.fn(({ content }) => <div data-testid='markdown-view'>{content}</div>)
+}))
+
+vi.mock('../sync/index.js', () => ({
+  syncToFlomo: vi.fn(),
+  getFlomoApiEndpoint: vi.fn(() => '')
 }))
 
 const mockRecords = [
@@ -153,26 +159,30 @@ describe('HistoryView', () => {
     })
 
     it('点击删除并确认后调用 deleteQueryRecords 并刷新列表', () => {
-      window.confirm = vi.fn(() => true)
       render(<HistoryView />)
 
       fireEvent.click(screen.getByTestId('select-detail/ts_hello'))
+      // 第一次点击：进入确认态
+      fireEvent.click(screen.getByTestId('delete-selected-btn'))
+      expect(screen.getByText('确认删除')).toBeInTheDocument()
+      // 第二次点击：执行删除
       fireEvent.click(screen.getByTestId('delete-selected-btn'))
 
-      expect(window.confirm).toHaveBeenCalledWith('确定删除 1 条记录吗？')
       expect(queryHistory.deleteQueryRecords).toHaveBeenCalledWith(
         expect.anything(),
         ['detail/ts_hello']
       )
+      // 删除后按钮恢复为「删除」
+      expect(screen.getByText('删除')).toBeInTheDocument()
     })
 
-    it('删除确认弹窗取消时不调用 deleteQueryRecords', () => {
-      window.confirm = vi.fn(() => false)
+    it('点击删除后进入确认态，不执行删除', () => {
       render(<HistoryView />)
 
       fireEvent.click(screen.getByTestId('select-detail/ts_hello'))
       fireEvent.click(screen.getByTestId('delete-selected-btn'))
 
+      expect(screen.getByText('确认删除')).toBeInTheDocument()
       expect(queryHistory.deleteQueryRecords).not.toHaveBeenCalled()
     })
 
@@ -182,5 +192,137 @@ describe('HistoryView', () => {
       const practiceBtn = screen.getByTestId('practice-btn')
       expect(practiceBtn.disabled).toBe(true)
     })
+  })
+})
+
+describe('HistoryView flomo 同步', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    globalThis.window = {
+      ...globalThis.window,
+      utools: { db: {} }
+    }
+    queryHistory.getHistoryRecords.mockReturnValue(mockRecords)
+    queryHistory.getDetailRecord.mockReturnValue(null)
+    getFlomoApiEndpoint.mockReturnValue('')
+    syncToFlomo.mockResolvedValue({ success: true })
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('选中单词 + 有端点 → 同步按钮可见', () => {
+    const detailDoc = { word: 'hello', content: '详解内容', timestamp: '2026-06-18T10:00:00.000Z' }
+    queryHistory.getDetailRecord.mockReturnValue(detailDoc)
+    getFlomoApiEndpoint.mockReturnValue('https://flomoapp.com/api/notes')
+
+    render(<HistoryView />)
+    fireEvent.click(screen.getByText('hello'))
+
+    expect(screen.getByTestId('history-sync-flomo-btn')).toBeInTheDocument()
+  })
+
+  it('选中单词 + 无端点 → 同步按钮不可见', () => {
+    const detailDoc = { word: 'hello', content: '详解内容', timestamp: '2026-06-18T10:00:00.000Z' }
+    queryHistory.getDetailRecord.mockReturnValue(detailDoc)
+    getFlomoApiEndpoint.mockReturnValue('')
+
+    render(<HistoryView />)
+    fireEvent.click(screen.getByText('hello'))
+
+    expect(screen.queryByTestId('history-sync-flomo-btn')).not.toBeInTheDocument()
+  })
+
+  it('点击同步按钮 → syncToFlomo 被调用并进入 syncing 态', async () => {
+    const detailDoc = { word: 'hello', content: '详解内容', timestamp: '2026-06-18T10:00:00.000Z' }
+    queryHistory.getDetailRecord.mockReturnValue(detailDoc)
+    getFlomoApiEndpoint.mockReturnValue('https://flomoapp.com/api/notes')
+
+    let resolveSync
+    syncToFlomo.mockReturnValue(new Promise((resolve) => { resolveSync = resolve }))
+
+    render(<HistoryView />)
+    fireEvent.click(screen.getByText('hello'))
+
+    const btn = screen.getByTestId('history-sync-flomo-btn')
+    fireEvent.click(btn)
+
+    expect(syncToFlomo).toHaveBeenCalledWith('hello', '详解内容')
+    expect(btn).toHaveClass('syncing')
+    expect(screen.getByTestId('history-sync-status-text')).toHaveTextContent('同步中...')
+
+    await act(async () => {
+      resolveSync({ success: true })
+    })
+  })
+
+  it('同步成功 → 按钮短暂 success 后恢复 idle', async () => {
+    const detailDoc = { word: 'hello', content: '详解内容', timestamp: '2026-06-18T10:00:00.000Z' }
+    queryHistory.getDetailRecord.mockReturnValue(detailDoc)
+    getFlomoApiEndpoint.mockReturnValue('https://flomoapp.com/api/notes')
+    syncToFlomo.mockResolvedValue({ success: true })
+
+    render(<HistoryView />)
+    fireEvent.click(screen.getByText('hello'))
+    fireEvent.click(screen.getByTestId('history-sync-flomo-btn'))
+
+    await act(async () => {
+      await vi.runAllTimersAsync()
+    })
+
+    const btn = screen.getByTestId('history-sync-flomo-btn')
+    expect(btn).toHaveClass('idle')
+    expect(screen.queryByTestId('history-sync-status-text')).not.toBeInTheDocument()
+  })
+
+  it('同步失败 → 按钮短暂 error 后恢复 idle', async () => {
+    const detailDoc = { word: 'hello', content: '详解内容', timestamp: '2026-06-18T10:00:00.000Z' }
+    queryHistory.getDetailRecord.mockReturnValue(detailDoc)
+    getFlomoApiEndpoint.mockReturnValue('https://flomoapp.com/api/notes')
+    syncToFlomo.mockResolvedValue({ success: false, message: '网络不通' })
+
+    render(<HistoryView />)
+    fireEvent.click(screen.getByText('hello'))
+    fireEvent.click(screen.getByTestId('history-sync-flomo-btn'))
+
+    await act(async () => {
+      await vi.runAllTimersAsync()
+    })
+
+    const btn = screen.getByTestId('history-sync-flomo-btn')
+    expect(btn).toHaveClass('idle')
+    expect(screen.queryByTestId('history-sync-status-text')).not.toBeInTheDocument()
+  })
+
+  it('切换选中单词时同步按钮状态重置为 idle', async () => {
+    const detailDoc1 = { word: 'hello', content: '详解内容1', timestamp: '2026-06-18T10:00:00.000Z' }
+    const detailDoc2 = { word: 'world', content: '详解内容2', timestamp: '2026-06-18T11:00:00.000Z' }
+    queryHistory.getDetailRecord.mockReturnValue(detailDoc1)
+    getFlomoApiEndpoint.mockReturnValue('https://flomoapp.com/api/notes')
+
+    // 先让按钮进入 success 状态
+    syncToFlomo.mockResolvedValue({ success: true })
+    render(<HistoryView />)
+    fireEvent.click(screen.getByText('hello'))
+    fireEvent.click(screen.getByTestId('history-sync-flomo-btn'))
+    await act(async () => { await vi.runAllTimersAsync() })
+
+    // 验证 success 状态
+    let btn = screen.getByTestId('history-sync-flomo-btn')
+    expect(btn).toHaveClass('idle') // 2s 后已恢复
+
+    // 再次同步，然后不等恢复，直接切换单词
+    syncToFlomo.mockResolvedValue({ success: true })
+    fireEvent.click(screen.getByTestId('history-sync-flomo-btn'))
+
+    // 不等 2s 恢复，直接切换到 world
+    queryHistory.getDetailRecord.mockReturnValue(detailDoc2)
+    fireEvent.click(screen.getByText('world'))
+
+    // 切换后按钮应回到 idle
+    btn = screen.getByTestId('history-sync-flomo-btn')
+    expect(btn).toHaveClass('idle')
   })
 })

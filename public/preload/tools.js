@@ -1,5 +1,8 @@
 const { buildMessages } = require('./prompt.js')
 
+// NOTE: preload 与 src 运行在不同运行时 (CJS vs ESM)，无法共享模块。
+// getPreferredModel / queryWordStream 在此内联实现，与 src/model-preference、
+// src/ai-call 语义完全一致。任一修改 MUST 同步另一侧（原则 4）。
 function createExplainWordHandler () {
   const STORAGE_KEY = 'preferredModel'
 

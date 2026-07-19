@@ -4,6 +4,14 @@ import { MarkdownView } from '../markdown-view/index.jsx'
 import { HistoryView } from '../history-view/index.jsx'
 import { getPreferredModel, setPreferredModel } from '../model-preference/index.js'
 import { getSaveQueryHistory, setSaveQueryHistory } from '../history-preference/index.js'
+import {
+  getFlomoApiEndpoint,
+  getFlomoTags,
+  setFlomoApiEndpoint,
+  setFlomoTags
+} from '../sync/index.js'
+import { useFlomoSync } from '../sync/useFlomoSync.js'
+import flomoIcon from '../../assets/flomo_favicon.ico'
 import './index.css'
 
 const VIEW_MAIN = 'main'
@@ -38,6 +46,9 @@ export default function MainPage () {
   const [models, setModels] = useState([])
   const [selectedModel, setSelectedModel] = useState('')
   const [saveEnabled, setSaveEnabled] = useState(() => getSaveQueryHistory())
+  const [endpoint, setEndpoint] = useState(() => getFlomoApiEndpoint())
+  const [tags, setTags] = useState(() => getFlomoTags())
+  const { syncStatus, syncMessage, handleSync } = useFlomoSync(word, result)
 
   useEffect(() => {
     const preferred = getPreferredModel()
@@ -78,33 +89,59 @@ export default function MainPage () {
         </header>
         <div className='settings-panel'>
           <h1 className='settings-title'>设置</h1>
-          <label className='setting-label'>AI 模型选择</label>
-          <select
-            className='model-select'
-            value={selectedModel}
-            onChange={(e) => handleModelChange(e.target.value)}
-          >
-            <option value=''>默认模型</option>
-            {models.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.label}{m.description ? ` — ${m.description}` : ''}
-              </option>
-            ))}
-          </select>
-          <p className='setting-hint'>选择用于生成单词解释的 AI 模型，偏好自动保存</p>
-          <div className='setting-row'>
-            <label className='setting-label'>保存查词历史记录</label>
-            <label className='save-history-switch'>
-              <input
-                type='checkbox'
-                checked={saveEnabled}
-                onChange={handleToggleSave}
-                data-testid='save-history-toggle'
-              />
-              <span className='slider' />
-            </label>
+
+          <div className='settings-card'>
+            <h2 className='settings-card-title'>基本设置</h2>
+            <label className='setting-label'>AI 模型选择</label>
+            <select
+              className='model-select'
+              value={selectedModel}
+              onChange={(e) => handleModelChange(e.target.value)}
+            >
+              <option value=''>默认模型</option>
+              {models.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.label}{m.description ? ` — ${m.description}` : ''}
+                </option>
+              ))}
+            </select>
+            <p className='setting-hint'>选择用于生成单词解释的 AI 模型，偏好自动保存</p>
+            <div className='setting-row'>
+              <label className='setting-label'>保存查词历史记录</label>
+              <label className='save-history-switch'>
+                <input
+                  type='checkbox'
+                  checked={saveEnabled}
+                  onChange={handleToggleSave}
+                  data-testid='save-history-toggle'
+                />
+                <span className='slider' />
+              </label>
+            </div>
+            <p className='setting-hint'>关闭后将不再自动保存新的查词记录（已有记录保留）</p>
           </div>
-          <p className='setting-hint'>关闭后将不再自动保存新的查词记录（已有记录保留）</p>
+
+          <div className='settings-card'>
+            <h2 className='settings-card-title'>同步到其他笔记应用</h2>
+            <label className='setting-label'>flomo API 端点</label>
+            <input
+              className='sync-input'
+              type='text'
+              placeholder='请输入 flomo API 端点'
+              value={endpoint}
+              onChange={(e) => { setEndpoint(e.target.value); setFlomoApiEndpoint(e.target.value) }}
+            />
+            <p className='setting-hint'>向 flomo 新增笔记的 API 端点地址</p>
+            <label className='setting-label'>笔记标签</label>
+            <input
+              className='sync-input'
+              type='text'
+              placeholder='多个标签以空格分隔，选填'
+              value={tags}
+              onChange={(e) => { setTags(e.target.value); setFlomoTags(e.target.value) }}
+            />
+            <p className='setting-hint'>笔记最前面的标签，默认 #English/vocabulary，多个标签以空格分隔</p>
+          </div>
         </div>
       </div>
     )
@@ -147,7 +184,36 @@ export default function MainPage () {
       </div>
       <div className='result-area'>
         {error && <div className='error-msg'>{error}</div>}
-        {result && (
+        {result && !loading && !error && (
+          <div className='result-with-actions'>
+            <div className='result-content'>
+              <MarkdownView content={result} />
+            </div>
+            <div className='result-actions'>
+              {endpoint && (
+                <>
+                  <button
+                    className={`sync-flomo-btn ${syncStatus}`}
+                    data-testid='sync-flomo-btn'
+                    onClick={handleSync}
+                    disabled={syncStatus === 'syncing'}
+                    title='同步到 flomo'
+                  >
+                    <img src={flomoIcon} alt='flomo' className='sync-flomo-icon' />
+                  </button>
+                  {syncStatus !== 'idle' && (
+                    <span className={`sync-status-text sync-${syncStatus}`} data-testid='sync-status-text'>
+                      {syncStatus === 'syncing' && '同步中...'}
+                      {syncStatus === 'success' && '已同步'}
+                      {syncStatus === 'error' && (syncMessage || '同步失败')}
+                    </span>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        )}
+        {result && (loading || error) && (
           <div className='result-content'>
             <MarkdownView content={result} />
           </div>

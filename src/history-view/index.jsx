@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 /* global SpeechSynthesisUtterance */
 import { getHistoryRecords, getDetailRecord, deleteQueryRecords } from '../query-history/index.js'
 import { MarkdownView } from '../markdown-view/index.jsx'
+import { useFlomoSync } from '../sync/useFlomoSync.js'
+import flomoIcon from '../../assets/flomo_favicon.ico'
 import './index.css'
 
 function getDb () {
@@ -39,6 +41,9 @@ export function HistoryView () {
   const [loadingDetail, setLoadingDetail] = useState(false)
   const [playingWord, setPlayingWord] = useState(null)
   const [selectedIds, setSelectedIds] = useState(() => new Set())
+  const [selectedWord, setSelectedWord] = useState('')
+  const [deleteConfirming, setDeleteConfirming] = useState(false)
+  const { endpoint, syncStatus, syncMessage, handleSync, resetSync } = useFlomoSync(selectedWord, detailContent)
 
   // 加载记录
   useEffect(() => {
@@ -48,7 +53,9 @@ export function HistoryView () {
     setRecords(result)
     // 切换筛选时清空选中
     setSelectedId(null)
+    setSelectedWord('')
     setDetailContent(null)
+    resetSync()
   }, [timeFilter])
 
   // 搜索过滤（前端过滤）
@@ -65,8 +72,10 @@ export function HistoryView () {
   // 选中单词加载详情
   const handleSelect = useCallback((record) => {
     setSelectedId(record.detailDocId)
+    setSelectedWord(record.word)
     setLoadingDetail(true)
     setDetailContent(null)
+    resetSync()
 
     const db = getDb()
     if (!db) {
@@ -113,22 +122,29 @@ export function HistoryView () {
     })
   }, [filteredRecords])
 
-  // 批量删除（带二次确认）
+  // 批量删除（二次点击确认，无弹窗）
   const handleDelete = useCallback(() => {
     if (selectedIds.size === 0) return
-    const ids = [...selectedIds]
-    if (window.confirm(`确定删除 ${ids.length} 条记录吗？`)) {
-      const db = getDb()
-      if (db) {
-        deleteQueryRecords(db, ids)
-        const result = getHistoryRecords(db, timeFilter)
-        setRecords(result)
-      }
-      setSelectedId(null)
-      setDetailContent(null)
-      setSelectedIds(new Set())
+
+    if (!deleteConfirming) {
+      setDeleteConfirming(true)
+      return
     }
-  }, [selectedIds, timeFilter])
+
+    const ids = [...selectedIds]
+    const db = getDb()
+    if (db) {
+      deleteQueryRecords(db, ids)
+      const result = getHistoryRecords(db, timeFilter)
+      setRecords(result)
+    }
+    setSelectedId(null)
+    setSelectedWord('')
+    setDetailContent(null)
+    resetSync()
+    setSelectedIds(new Set())
+    setDeleteConfirming(false)
+  }, [selectedIds, timeFilter, deleteConfirming])
 
   return (
     <div className='history-view' data-testid='history-view'>
@@ -208,12 +224,12 @@ export function HistoryView () {
             全选
           </label>
           <button
-            className='history-del-btn'
+            className={`history-del-btn${deleteConfirming ? ' confirming' : ''}`}
             disabled={selectedIds.size === 0}
             onClick={handleDelete}
             data-testid='delete-selected-btn'
           >
-            删除
+            {deleteConfirming ? '确认删除' : '删除'}
           </button>
           <button
             className='history-practice-btn'
@@ -232,8 +248,34 @@ export function HistoryView () {
           <div className='history-right-placeholder'>请选择一个单词查看详情</div>
         )}
         {!loadingDetail && detailContent && (
-          <div className='history-right-content'>
-            <MarkdownView content={detailContent} />
+          <div className='history-right-content' data-testid='history-right-content'>
+            <div className='history-right-detail-row'>
+              <div className='history-right-detail-markdown'>
+                <MarkdownView content={detailContent} />
+              </div>
+              <div className='history-right-actions'>
+                {endpoint && (
+                  <>
+                    <button
+                      className={`history-right-sync-flomo-btn ${syncStatus}`}
+                      data-testid='history-sync-flomo-btn'
+                      onClick={handleSync}
+                      disabled={syncStatus === 'syncing'}
+                      title='同步到 flomo'
+                    >
+                      <img src={flomoIcon} alt='flomo' className='sync-flomo-icon' />
+                    </button>
+                    {syncStatus !== 'idle' && (
+                      <span className={`sync-status-text sync-${syncStatus}`} data-testid='history-sync-status-text'>
+                        {syncStatus === 'syncing' && '同步中...'}
+                        {syncStatus === 'success' && '已同步'}
+                        {syncStatus === 'error' && (syncMessage || '同步失败')}
+                      </span>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
           </div>
         )}
       </div>

@@ -45,10 +45,10 @@ textarea {
 }
 
 @media (prefers-color-scheme: dark) {
-  &::-webkit-scrollbar-track-piece {
+  ::-webkit-scrollbar-track-piece {
     background-color: #303133;
   }
-  &::-webkit-scrollbar-thumb {
+  ::-webkit-scrollbar-thumb {
     background-color: #666;
     border-color: #303133;
   }
@@ -56,4 +56,32 @@ textarea {
     background-color: #303133;
     color: #fff;
   }
+
+  .sync-status-text.sync-syncing {
+    color: #777;
+  }
+}
+
+/* 同步按钮状态文字（main-page + history-view 共享） */
+.sync-status-text {
+  display: block;
+  font-size: 11px;
+  margin-top: 4px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.sync-status-text.sync-syncing {
+  color: #999;
+}
+
+.sync-status-text.sync-success {
+  color: #52c41a;
+}
+
+.sync-status-text.sync-error {
+  color: #ff4d4f;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
