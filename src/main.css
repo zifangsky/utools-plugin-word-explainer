@@ -45,10 +45,10 @@ textarea {
 }
 
 @media (prefers-color-scheme: dark) {
-  &::-webkit-scrollbar-track-piece {
+  ::-webkit-scrollbar-track-piece {
     background-color: #303133;
   }
-  &::-webkit-scrollbar-thumb {
+  ::-webkit-scrollbar-thumb {
     background-color: #666;
     border-color: #303133;
   }
