@@ -219,14 +219,9 @@ export default function MainPage () {
                   data-testid='sync-flomo-btn'
                   onClick={handleSyncFlomo}
                   disabled={syncStatus === 'syncing'}
-                  title='同步到 flomo'
+                  title={syncStatus === 'syncing' ? '同步中...' : syncStatus === 'success' ? '已同步' : syncStatus === 'error' ? syncMessage : '同步到 flomo'}
                 >
                   <img src={flomoIcon} alt='flomo' className='sync-flomo-icon' />
-                  {syncStatus === 'syncing' && <span className='sync-status-text'>同步中...</span>}
-                  {syncStatus === 'success' && <span className='sync-status-text sync-success'>✓</span>}
-                  {syncStatus === 'error' && (
-                    <span className='sync-status-text sync-error'>✗ {syncMessage}</span>
-                  )}
                 </button>
               )}
             </div>
