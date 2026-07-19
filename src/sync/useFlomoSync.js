@@ -1,6 +1,14 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { syncToFlomo, getFlomoApiEndpoint } from './index.js'
 
+function safeGetEndpoint () {
+  try {
+    return getFlomoApiEndpoint()
+  } catch (_) {
+    return ''
+  }
+}
+
 /**
  * flomo 同步状态管理 Hook
  * 封装同步按钮的状态机、网络调用和定时器生命周期。
@@ -10,10 +18,18 @@ import { syncToFlomo, getFlomoApiEndpoint } from './index.js'
  * @returns {{ endpoint, syncStatus, syncMessage, handleSync, resetSync, buildTitle }}
  */
 export function useFlomoSync (word, content) {
-  const [endpoint] = useState(() => getFlomoApiEndpoint())
+  const endpointRef = useRef(null)
+  if (endpointRef.current === null) {
+    endpointRef.current = safeGetEndpoint()
+  }
+
   const [syncStatus, setSyncStatus] = useState('idle')
   const [syncMessage, setSyncMessage] = useState('')
   const timeoutRef = useRef(null)
+  const wordRef = useRef(word)
+  const contentRef = useRef(content)
+  wordRef.current = word
+  contentRef.current = content
 
   // 组件卸载时清理定时器
   useEffect(() => {
@@ -23,13 +39,15 @@ export function useFlomoSync (word, content) {
   }, [])
 
   const handleSync = useCallback(async () => {
-    if (!word || !content) return
+    const w = wordRef.current
+    const c = contentRef.current
+    if (!w || !c) return
 
     if (timeoutRef.current) clearTimeout(timeoutRef.current)
     setSyncStatus('syncing')
     setSyncMessage('')
 
-    const res = await syncToFlomo(word, content)
+    const res = await syncToFlomo(w, c)
     if (res.success) {
       setSyncStatus('success')
       timeoutRef.current = setTimeout(() => setSyncStatus('idle'), 2000)
@@ -38,7 +56,7 @@ export function useFlomoSync (word, content) {
       setSyncMessage(res.message || '同步失败')
       timeoutRef.current = setTimeout(() => setSyncStatus('idle'), 3000)
     }
-  }, [word, content])
+  }, []) // 使用 ref 避免依赖 word/content 变化
 
   const resetSync = useCallback(() => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current)
@@ -53,5 +71,12 @@ export function useFlomoSync (word, content) {
     return '同步到 flomo'
   }, [syncStatus, syncMessage])
 
-  return { endpoint, syncStatus, syncMessage, handleSync, resetSync, buildTitle }
+  return {
+    endpoint: endpointRef.current,
+    syncStatus,
+    syncMessage,
+    handleSync,
+    resetSync,
+    buildTitle
+  }
 }
