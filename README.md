@@ -47,6 +47,13 @@ src/
 ├── history-view/               # 查词历史 UI（搜索、时间筛选、单词卡片、详情）
 ├── mcp-tools/                  # MCP 工具 handler
 ├── sync/                       # flomo 同步（偏好存取 + 内容构建 + API 调用）
+assets/
+├── logo/                       # 插件 Logo 源文件
+├── flomo_favicon.ico           # flomo 同步按钮图标
+public/
+├── logo.png                    # uTools 插件 Logo（运行时）
+├── plugin.json                 # 插件配置
+└── preload/                    # Node.js preload 脚本
 ```
 
 ## 技术栈
