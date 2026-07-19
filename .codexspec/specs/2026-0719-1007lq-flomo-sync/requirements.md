@@ -95,6 +95,22 @@ quotes needed to resolve later interpretation disputes.
 - **User Evidence**: "设置界面的 flomo 标签可以默认设置为 `#English/vocabulary`，然后用户可以手动修改，也可以增加更多的标签。如果用户设置了多个标签，那么在调用 flomo 的笔记新增 API 的时候，将用户设置的多个标签都设置在笔记最前面，用英文空格隔开。"
 - **Confirmed At**: 2026-07-19
 
+### DEC-004: 查词历史详情页同步入口
+
+- **Status**: confirmed
+- **Decision**: 在查词历史页选中某个历史记录后，右侧单词详解区域同样显示 flomo 同步按钮。按钮行为与首页同步按钮一致（四态：idle/syncing/success/error），使用历史记录中保存的单词和详解内容进行同步。
+- **Reason**: 用户可能在复习查词历史时希望将之前查询的单词也同步到 flomo，不应只限制在首页实时查询场景。
+- **User Evidence**: （后续优化任务中追加）
+- **Confirmed At**: 2026-07-19
+
+### DEC-005: 同步按钮样式统一为 header 按钮风格
+
+- **Status**: confirmed
+- **Decision**: 首页和查词历史详情页的 flomo 同步按钮样式统一为小型图标按钮，与 header 的「查词历史」📖 和「设置」⚙ 按钮风格一致（padding: 4px 10px、border-radius: 4px、图标 16×16px）。按钮不包含文字标签，状态通过 CSS 样式（背景色/边框色变化）+ title tooltip 传达。
+- **Reason**: 保持 UI 风格一致，避免大尺寸按钮破坏页面视觉平衡。
+- **User Evidence**: （样式优化任务中追加）
+- **Confirmed At**: 2026-07-19
+
 ## Out of Scope
 
 ### OUT-001: 其他笔记应用同步
@@ -134,3 +150,8 @@ quotes needed to resolve later interpretation disputes.
 - **Summary Presented**: 用户追加两个优化：(1) flomo 标签默认值为 `#English/vocabulary`；(2) 未配置端点时查词结果不显示图标。
 - **User Confirmation**: 用户直接指定。
 - **Entries Confirmed**: DEC-003 (新增)
+
+### 2026-07-19 (实现后同步)
+
+- **Summary Presented**: 实现阶段新增：(1) 查词历史详情页同步按钮 (DEC-004)；(2) 按钮样式统一为小型图标按钮 (DEC-005)。
+- **Entries Confirmed**: DEC-004, DEC-005 (新增)

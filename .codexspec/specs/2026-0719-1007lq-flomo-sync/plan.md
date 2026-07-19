@@ -7,11 +7,11 @@ Language: Generate this document in the language specified in .codexspec/config.
 **Related Spec**: `.codexspec/specs/2026-0719-1007lq-flomo-sync/spec.md`
 **Confirmed Requirements**: `.codexspec/specs/2026-0719-1007lq-flomo-sync/requirements.md`
 **Created**: 2026-07-19
-**Status**: Draft
+**Status**: Implemented
 
 ## Context
 
-英语单词详解 uTools 插件当前具备完整的查词→AI 解释→渲染流程，以及查词历史管理。用户需要一个将查词结果快速归档到个人笔记工具 flomo 的能力，同时重新整理设置页排版。
+英语单词详解 uTools 插件当前具备完整的查词→AI 解释→渲染流程，以及查词历史管理。用户需要一个将查词结果快速归档到个人笔记工具 flomo 的能力（同时覆盖首页实时查询和查词历史详情两个入口），同时重新整理设置页排版。
 
 项目当前采用 React 19 + Vite 6，遵循 `src/<module>/index.js + index.test.js` 模块形态。preload 层（`public/preload/services.js`）提供 Node.js 能力桥接；React 层通过 `window.services` 调用。宪法要求所有改动遵循原则 1（模块边界）、原则 2（行为驱动测试）、原则 8（强制严格 TDD）。
 
@@ -19,10 +19,12 @@ Language: Generate this document in the language specified in .codexspec/config.
 
 **Goals:**
 - 查词结果右侧新增 flomo 同步按钮（仅在端点已配置时可见）
+- 查词历史详情页右侧新增 flomo 同步按钮（复用同一 sync 模块）
 - 通过 preload Node.js 层发送 HTTP POST 到用户配置的 flomo API 端点
 - flomo 笔记第一行为「标签 + **{单词} 单词详解**」，第二行空，第三行起为原正文
 - 设置页重组为两个卡片，新增 flomo 端点/标签配置
 - flomo 标签默认值为 `#English/vocabulary`
+- 首页和历史页同步按钮统一为小型图标按钮（对齐 header 按钮风格）
 - 不修改现有功能的任何行为或测试
 
 **Non-Goals:**
@@ -44,17 +46,21 @@ Language: Generate this document in the language specified in .codexspec/config.
 ```
 ┌─ Renderer (React / webview) ────────────────────────────────────────┐
 │                                                                      │
-│  MainPage ──┬── useWordQuery ──→ prompt-template / ai-call / ...    │
-│             │    (unchanged)                                         │
-│             │                                                        │
-│             └── sync (NEW) ──┬─→ window.utools.dbStorage             │
-│                              │   (flomoApiEndpoint, flomoTags)       │
-│                              │                                       │
-│                              └─→ window.services.sendToFlomo()       │
-│                                  (bridge to preload)                 │
+│  main-page ──┬── useWordQuery ──→ prompt-template / ai-call / ...   │
+│              │    (unchanged)                                         │
+│              │                                                        │
+│              └── sync (NEW) ──┬─→ window.utools.dbStorage             │
+│                               │   (flomoApiEndpoint, flomoTags)       │
+│                               │                                       │
+│                               └─→ window.services.sendToFlomo()       │
+│                                   (bridge to preload)                 │
 │                                                                      │
-│  Note: MainPage 直接传递 result + word 给 sync，无需修改             │
-│        useWordQuery 返回值结构                                       │
+│  history-view (MODIFIED) ──→ sync (NEW, same module)                 │
+│   右侧详情区同步按钮                                                   │
+│                                                                      │
+│  Note: main-page 直接传递 word + result 给 sync；                     │
+│        history-view 传递 selectedWord + detailContent。               │
+│        两处均无需修改各自数据源的返回值结构。                             │
 └──────────────────────────────────────────────────────────────────────┘
                                     │
                                     │ window.services
@@ -76,24 +82,33 @@ Language: Generate this document in the language specified in .codexspec/config.
 ```
 src/
 ├── sync/                   # NEW: 同步偏好存储 + 笔记内容构建 + flomo 同步逻辑
-│   ├── index.js            #   偏好存取 / buildFlomoContent / syncToFlomo
+│   ├── index.js            #   get/set 端点、get/set 标签、buildFlomoContent、syncToFlomo
 │   └── index.test.js
-├── MainPage/               # MODIFIED: 同步按钮 + 设置卡片化
+├── main-page/              # MODIFIED: 同步按钮 + 设置卡片化（已从 MainPage/ 重命名）
+│   ├── index.jsx
+│   ├── index.css
+│   └── index.test.jsx
+├── history-view/           # MODIFIED: 详情页同步按钮
 │   ├── index.jsx
 │   ├── index.css
 │   └── index.test.jsx
 public/
 ├── preload/
 │   └── services.js         # MODIFIED: 新增 sendToFlomo 方法
+assets/
+├── flomo_favicon.ico       # NEW: flomo 图标
 vite.config.js              # MODIFIED: assetsInclude 新增 '.ico'
+vitest.config.js            # NEW: 测试配置分离
 ```
 
-**修改范围**: 新增 1 个模块 (`src/sync/`)，修改 3 个文件 (`MainPage/index.jsx` + `index.css` + `vite.config.js`) 和 1 个 preload 文件。不修改 `useWordQuery`、`plugin.json`、`package.json`。
+**修改范围**: 新增 1 个模块 (`src/sync/`)，修改 4 个组件 (`main-page` + `history-view` + preload + vite)。不修改 `useWordQuery`、`plugin.json`、`package.json`（仅添加 lint 脚本）。
 
 **设计理由**:
-- `MainPage` 查词后已有 `result`（来自 `useWordQuery`）+ `word`（来自 input state），sync 所需数据原地就绪，无需通过 hook 中转。
+- `main-page` 查词后已有 `result`（来自 `useWordQuery`）+ `word`（来自 input state），sync 所需数据原地就绪，无需通过 hook 中转。
+- `history-view` 详情区已有 `detailContent`（从 `utools.db` 读取）+ `selectedWord`（选中的历史记录单词），sync 所需数据同样原地就绪。
 - 将所有同步逻辑内聚于 `src/sync/` 单一模块，避免每种笔记应用产生独立目录。未来扩展 Notion 仅需在 `sync/` 中新增 `syncToNotion` 等函数。
 - 静态资源（flomo 图标）统一放在根 `assets/`，通过 Vite import 引用，不混入 `public/` 或 `dist/`。
+- 目录已统一为 kebab-case（`src/main-page/`），遵循项目约定。
 
 不修改的文件：`plugin.json`、`package.json`、`CLAUDE.md`（实现后同步）。
 
@@ -264,6 +279,30 @@ async function handleSyncFlomo () {
 
 **Decision Level**: Plan-level technical decision; does not change confirmed product scope
 
+### Decision 5: 查词历史详情页复用 sync 模块
+
+**Context**: 用户可能在复习查词历史时也希望将单词同步到 flomo，不应仅限制在首页实时查询场景。
+
+**Decision**: `history-view` 直接导入 `syncToFlomo` 和 `getFlomoApiEndpoint`，在右侧详情区渲染与首页相同的同步按钮。数据源使用 history-view 已有的 `selectedWord`（选中单词）和 `detailContent`（存储的详解内容）。
+
+**Rationale**: `sync` 模块的接口设计已支持任意来源的 `(word, result)` 对，history-view 的数据恰好满足此签名。无需修改 `query-history` 数据层或 `sync` 模块接口。切换选中单词时主动重置 `syncStatus` 为 idle，避免上一单词的状态残留。
+
+**Covers**: REQ-016, REQ-017, REQ-018
+
+**Decision Level**: Plan-level technical decision; does not change confirmed product scope
+
+### Decision 6: 同步按钮统一为小型图标按钮样式
+
+**Context**: 原始设计的同步按钮包含图标 + 文字标签，尺寸较大，与 header 区的小型图标按钮（📖 查词历史、设置）风格不统一。
+
+**Decision**: 首页和历史详情页的同步按钮均采用 header 按钮风格：`padding: 4px 10px`、`border-radius: 4px`、`line-height: 1`、图标 `16×16px`。按钮不含文字标签，同步状态通过 CSS 背景色/边框色变化（四态：idle/syncing/success/error）+ `title` tooltip 传达。
+
+**Rationale**: 保持全局 UI 风格一致性，button 的四态视觉反馈通过颜色变化足够清晰，不需要额外的文字标签。
+
+**Covers**: REQ-019
+
+**Decision Level**: Plan-level technical decision; does not change confirmed product scope
+
 ## Risks / Trade-offs
 
 | Risk | Likelihood | Impact | Mitigation |
@@ -275,40 +314,41 @@ async function handleSyncFlomo () {
 ## Implementation Phases
 
 ### Phase 1: 数据层（纯逻辑，无 UI 依赖）
-- [ ] 创建 `src/sync/index.js` + `index.test.js`（偏好存取 + buildFlomoContent + syncToFlomo）
-- [ ] 修改 `public/preload/services.js` 新增 `sendToFlomo` 方法
+- [x] 创建 `src/sync/index.js` + `index.test.js`（偏好存取 + buildFlomoContent + syncToFlomo）
+- [x] 修改 `public/preload/services.js` 新增 `sendToFlomo` 方法
 
 **Covers**: REQ-003, REQ-004, REQ-005, REQ-009, REQ-010, REQ-011
 
 ### Phase 2: UI 层（依赖 Phase 1）
-- [ ] 修改 `vite.config.js`：`assetsInclude: ['.ico']`（1 行新增，确保 Vite 识别 .ico 为可导入资源）
-- [ ] 修改 `src/MainPage/index.jsx`：
-  - import `syncToFlomo` 及 flomo 图标
-  - 新增 `syncStatus` state（`idle | syncing | success | error`）和 `syncMessage` state
-  - 同步按钮：`idle` 可点击 → `syncing` loading 态 → `success` 绿色/`error` 红色 + message，自动恢复
-  - 设置页重组为两个卡片，读取 flomo 配置
-- [ ] 修改 `src/MainPage/index.css`：结果区 flex 布局 + 同步按钮四态样式 + 卡片样式 + dark mode
-- [ ] 修改 `src/MainPage/index.test.jsx`：新增场景测试
-  - Mock: `vi.mock('../sync/index.js')` → `syncToFlomo` 可控返回值
-  - 场景: 有结果+有端点→按钮可见、无端点→按钮不可见、loading→不可见、点击同步→调用 syncToFlomo 并进入 syncing 态、syncToFlomo success→按钮变绿 2s 后恢复、syncToFlomo error→显示错误消息 3s 后恢复、设置页默认标签 `#English/vocabulary`
+- [x] 修改 `vite.config.js`：`assetsInclude: ['.ico']`，测试配置分离到 `vitest.config.js`
+- [x] 修改 `src/main-page/index.jsx`：同步按钮 + 卡片设置 + 按钮样式统一
+- [x] 修改 `src/main-page/index.css`：结果区 flex 布局 + 同步按钮四态样式 + 卡片样式 + dark mode
+- [x] 修改 `src/main-page/index.test.jsx`：新增场景测试
+- [x] 修改 `src/history-view/index.jsx`：详情区同步按钮 + selectedWord state
+- [x] 修改 `src/history-view/index.css`：详情区 flex 布局 + 同步按钮样式 + dark mode
+- [x] 修改 `src/history-view/index.test.jsx`：新增 5 个同步场景测试
 
-**Covers**: REQ-001, REQ-002, REQ-006, REQ-007, REQ-008, REQ-012, REQ-013, REQ-014, REQ-015
+**Covers**: REQ-001, REQ-002, REQ-006, REQ-007, REQ-008, REQ-012, REQ-013, REQ-014, REQ-015, REQ-016, REQ-017, REQ-018, REQ-019
 
 ### Phase 3: 验证与文档
-- [ ] 运行 `npm test` 确保全部通过（含新增测试）
-- [ ] 运行 `npx standard` 确保代码风格合规
-- [ ] 同步更新 `CLAUDE.md`（架构树、依赖方向、模块列表）
-- [ ] 同步更新 `README.md`（项目结构树、测试计数）
+- [x] 运行 `npm test` 确保全部通过（140 tests）
+- [x] 运行 `npm run lint` 确保代码风格合规
+- [x] 同步更新 `CLAUDE.md`（架构树、依赖方向、模块列表）
+- [x] 同步更新 `README.md`（项目结构树、测试计数）
+- [x] 目录重命名 `MainPage/` → `main-page/`（遵循 kebab-case 约定）
+- [x] CSS 清理（`.history-card-checkbox` 重复定义合并）
+- [x] 代码注释补充（preload/src 同步说明、模块用途）
 
-**Covers**: SC-004
+**Covers**: SC-004, SC-006
 
 ## Verification Strategy
 
 ### 单元测试（Vitest）
 | 模块 | 关键测试场景 | 覆盖 REQ |
 |------|-------------|---------|
-| `sync` | get/set 端点、get/set 标签、默认值、空值；buildFlomoContent 含标签/无标签/多标签/空正文 | REQ-003, REQ-004, REQ-005, REQ-009, REQ-010 |
-| `MainPage` | Mock: `vi.mock('../sync/index.js')`。场景：有结果+有端点→按钮可见；无端点→不可见；loading→不可见；点击→调用 syncToFlomo 进入 syncing 态；success→绿色 2s 恢复；error→红色+消息 3s 恢复；设置页默认标签 | REQ-001, REQ-008, REQ-012, REQ-013, REQ-014, REQ-015 |
+| `sync` | get/set 端点、get/set 标签、默认值、空值、null 守卫；buildFlomoContent 含标签/无标签/多标签/空正文 | REQ-003, REQ-004, REQ-005, REQ-009, REQ-010 |
+| `main-page` | Mock: `vi.mock('../sync/index.js')`。场景：有结果+有端点→按钮可见；无端点→不可见；loading→不可见；点击→调用 syncToFlomo 进入 syncing 态；success→绿色 2s 恢复；error→红色+消息 3s 恢复；设置页默认标签 | REQ-001, REQ-008, REQ-012, REQ-013, REQ-014, REQ-015, REQ-019 |
+| `history-view` | Mock: `vi.mock('../sync/index.js')`。场景：选中+有端点→按钮可见；选中+无端点→不可见；点击→调用 syncToFlomo 进入 syncing 态；success→绿色 2s 恢复；error→红色 3s 恢复 | REQ-016, REQ-017, REQ-018, REQ-019 |
 
 ### 集成测试（手动）
 | 场景 | 验证项 |
@@ -333,18 +373,22 @@ async function handleSyncFlomo () {
 
 | Spec Requirement | Plan Coverage | Reference |
 |------------------|---------------|-----------|
-| REQ-001 | Full | Decision 3 / Phase 2 |
+| REQ-001 | Full | Decision 3, Decision 6 / Phase 2 |
 | REQ-002 | Full | Phase 1 (preload) / Phase 2 (button handler) |
 | REQ-003 | Full | Phase 1 (sync/buildFlomoContent) |
 | REQ-004 | Full | Decision 2 / Phase 1 (sync/buildFlomoContent) |
 | REQ-005 | Full | Phase 1 (sync, pure function) |
-| REQ-006 | Full | Phase 2 (MainPage UI cards) |
-| REQ-007 | Full | Phase 2 (MainPage basic card) |
-| REQ-008 | Full | Phase 2 (MainPage sync card) |
+| REQ-006 | Full | Phase 2 (main-page UI cards) |
+| REQ-007 | Full | Phase 2 (main-page basic card) |
+| REQ-008 | Full | Phase 2 (main-page sync card) |
 | REQ-009 | Full | Phase 1 (sync preference storage) |
 | REQ-010 | Full | Phase 1 (sync preference storage, default value) |
 | REQ-011 | Full | Decision 1 / Phase 1 (preload) |
-| REQ-012 | Full | Phase 2 (MainPage success feedback) |
-| REQ-013 | Full | Phase 2 (MainPage error feedback) |
+| REQ-012 | Full | Phase 2 (main-page + history-view success feedback) |
+| REQ-013 | Full | Phase 2 (main-page + history-view error feedback) |
 | REQ-014 | Full | Phase 2 (conditional render) |
 | REQ-015 | Full | Phase 2 (conditional render, depends on endpoint config) |
+| REQ-016 | Full | Decision 5 / Phase 2 (history-view sync button) |
+| REQ-017 | Full | Decision 5 / Phase 2 (history-view data source) |
+| REQ-018 | Full | Decision 5 / Phase 2 (idle reset on word switch) |
+| REQ-019 | Full | Decision 6 / Phase 2 (button style unification) |

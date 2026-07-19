@@ -6,7 +6,7 @@ Language: Generate this document in the language specified in .codexspec/config.
 
 **Feature Branch**: `2026-0719-1007lq-flomo-sync`
 **Created**: 2026-07-19
-**Status**: Draft
+**Status**: Implemented
 **Input**: 用户确认的需求：增加同步单词解释到 flomo 的能力，并重新优化设置界面排版。
 
 ## User Scenarios & Testing
@@ -77,13 +77,36 @@ Language: Generate this document in the language specified in .codexspec/config.
 
 ---
 
+### User Story 4 - 从查词历史详情页同步到 flomo (Priority: P1)
+
+用户在查词历史页面选中某个历史记录后，在右侧单词详解区域看到一个与首页相同的 flomo 图标按钮（前提：已配置 API 端点）。点击按钮后，系统将历史记录中保存的单词和详解内容同步到 flomo。
+
+**Why this priority**: 用户可能在复习历史记录时需要同步，应当覆盖此高频场景。
+
+**Independent Test**: 可通过进入查词历史、选中一条记录、点击同步按钮、检查 flomo 是否收到笔记来独立验证。
+
+**Acceptance Scenarios**:
+
+1. **Given** 用户已配置 flomo API 端点，在查词历史中选中一条记录（单词 `notification`），**When** 查看右侧详解区域，**Then** 在详解内容右侧显示 flomo 同步按钮。
+
+2. **Given** 用户未配置 flomo API 端点，在查词历史中选中一条记录，**When** 查看右侧详解区域，**Then** 不显示 flomo 同步按钮。
+
+3. **Given** 点击同步按钮后请求成功，**When** 收到响应，**Then** 按钮短暂显示绿色成功状态，2 秒后恢复。
+
+4. **Given** 点击同步按钮后请求失败，**When** 收到错误，**Then** 按钮变红，同时 title tooltip 显示错误消息，3 秒后恢复。
+
+5. **Given** 用户选中另一条历史记录，**When** 查看新单词的详解，**Then** 之前的同步状态被重置为 idle（不会残留上一次的 success/error 样式）。
+
+---
+
 ### Edge Cases
 
-- 同步按钮在 `loading` 状态（查询进行中）不显示，因为此时没有完整结果。
-- 同步按钮在 `error` 状态不显示，因为没有可同步的结果。
+- 首页同步按钮在 `loading` 状态（查询进行中）不显示，因为此时没有完整结果。
+- 首页同步按钮在 `error` 状态不显示，因为没有可同步的结果。
 - 用户配置了端点但端点 URL 格式非法（如不以 `http` 开头），同步时 HTTP 层会自然报错，错误提示应泛化为"同步失败，请检查 API 端点配置"。
 - 标签输入中可能包含首尾空格，保存和读取时应 trim。
 - 正文内容可能包含 markdown 特殊字符（如 `**`、`#`），不应被错误解析或截断。
+- 查词历史详情页切换选中单词时，同步按钮状态自动重置为 idle。
 
 ## Requirements
 
@@ -134,6 +157,18 @@ Language: Generate this document in the language specified in .codexspec/config.
 - **REQ-015**: 当用户未配置 API 端点（值为空字符串）时，同步按钮 MUST NOT 显示。
   - Sources: CON-002, User Story 2 - Scenario 5, User Story 1 - Scenario 4
 
+- **REQ-016**: 查词历史详情页（`history-view`）在选中某条历史记录、且 API 端点已配置时，MUST 在详解内容右侧显示 flomo 同步按钮，行为和样式与首页按钮一致。
+  - Sources: DEC-004, User Story 4
+
+- **REQ-017**: 查词历史详情页同步按钮 MUST 使用历史记录中保存的单词和详解内容（`selectedWord` + `detailContent`）作为同步数据源。
+  - Sources: DEC-004, User Story 4
+
+- **REQ-018**: 查词历史详情页切换选中单词时，同步按钮状态 MUST 自动重置为 idle（清除上一单词的 success/error 残留状态）。
+  - Sources: DEC-004, User Story 4 - Scenario 5
+
+- **REQ-019**: 首页和查词历史详情页的 flomo 同步按钮 MUST 采用小型图标按钮样式，与 header 按钮（📖 查词历史、设置）风格一致：无文字标签、通过 title tooltip + CSS 颜色变化传达同步状态。
+  - Sources: DEC-005
+
 ### Key Entities
 
 - **Flomo 配置**：存储为两个 dbStorage key：`flomoApiEndpoint`（字符串，API 端点 URL，默认空）和 `flomoTags`（字符串，空格分隔的标签列表，默认 `#English/vocabulary`）。两者均对应用户设置输入，由 preload 服务读取后构建 POST 请求。
@@ -146,8 +181,9 @@ Language: Generate this document in the language specified in .codexspec/config.
 - **SC-001**: 用户完成单词查询后，能在 1 秒内点击同步按钮并将笔记发送到 flomo。
 - **SC-002**: 同步请求在网络正常情况下 3 秒内返回结果（成功或失败）。
 - **SC-003**: 配置持久化后，用户关闭插件再重新打开，之前配置的端点和标签仍然存在。
-- **SC-004**: 不修改现有功能的任何行为或测试用例——所有现有测试继续通过。
+- **SC-004**: 不修改现有功能的任何行为或测试用例——所有现有测试继续通过。实现完成后测试总数从 106 增长到 140。
 - **SC-005**: 首次进入设置页时，flomo 标签输入框默认显示 `#English/vocabulary`。
+- **SC-006**: 查词历史详情页在选中历史记录且有端点配置时，显示与首页风格一致的同步按钮。
 
 ## Out of Scope
 
@@ -162,15 +198,18 @@ Language: Generate this document in the language specified in .codexspec/config.
 
 - `window.utools.dbStorage` 可用且行为与现有的 `model-preference`、`history-preference` 模块一致。
 - `window.services`（preload 注入）可用于调用 Node.js API；需要在 `public/preload/services.js` 中新增 `sendToFlomo` 方法。
-- 当前查询的单词来自 MainPage 的 `word` state，查词结果 `result` 来自 `useWordQuery` hook 返回值——两者均在查词成功后同时可用，无需额外缓存或 hook 扩展。
+- 当前查询的单词来自 main-page 的 `word` state，查词结果 `result` 来自 `useWordQuery` hook 返回值——两者均在查词成功后同时可用，无需额外缓存或 hook 扩展。
+- 查词历史详情页同步时，单词选自 `history-view` 的 `selectedWord` state，内容来自 `detailContent`（存储在 `utools.db` 中的详情文档）。
 - `assets/flomo_favicon.ico` 通过 Vite import 引用（需在 `vite.config.js` 中设置 `assetsInclude: ['.ico']`）。
+- 目录命名已统一为 kebab-case（`src/main-page/` 替代原 `src/MainPage/`）。
 
 ## Dependencies
 
-- 现有的 `useWordQuery` hook 无需修改——`result` 已有返回值，`word` 由 MainPage input state 提供。
+- 现有的 `useWordQuery` hook 无需修改——`result` 已有返回值，`word` 由 main-page input state 提供。
 - 现有的 `public/preload/services.js` 需要扩展 `sendToFlomo` 方法。
-- `vite.config.js` 需新增 `assetsInclude: ['.ico']`（最小配置变更）。
-- 现有的 `src/MainPage/` 组件和 CSS 需要修改以支持新 UI。
+- `vite.config.js` 需新增 `assetsInclude: ['.ico']`，vitest 配置已分离到 `vitest.config.js`。
+- 现有的 `src/main-page/` 组件和 CSS 需要修改以支持新 UI。
+- 现有的 `src/history-view/` 组件和 CSS 需要修改以支持详情页同步按钮。
 - 不依赖外部 npm 包；不修改 `plugin.json`。
 
 ## Requirements Traceability
@@ -186,5 +225,7 @@ Language: Generate this document in the language specified in .codexspec/config.
 | DEC-001 | REQ-004 | 「{单词} 单词详解」标题格式 |
 | DEC-002 | REQ-006, REQ-007, REQ-008 | 双卡片布局 |
 | DEC-003 | REQ-004, REQ-008, REQ-010 | 默认标签值 + 多标签空格分隔 |
+| DEC-004 | REQ-016, REQ-017, REQ-018 | 查词历史详情页同步入口 |
+| DEC-005 | REQ-019 | 按钮样式统一 |
 | OUT-001 | Out of Scope | 明确排除 |
 | OUT-002 | REQ-005, Out of Scope | 明确排除 |

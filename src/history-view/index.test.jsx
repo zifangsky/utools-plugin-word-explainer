@@ -1,8 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import '@testing-library/jest-dom'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 import { HistoryView } from './index.jsx'
 import * as queryHistory from '../query-history/index.js'
+import { syncToFlomo, getFlomoApiEndpoint } from '../sync/index.js'
 
 vi.mock('../query-history/index.js', () => ({
   getHistoryRecords: vi.fn(),
@@ -12,6 +13,11 @@ vi.mock('../query-history/index.js', () => ({
 
 vi.mock('../markdown-view/index.jsx', () => ({
   MarkdownView: vi.fn(({ content }) => <div data-testid='markdown-view'>{content}</div>)
+}))
+
+vi.mock('../sync/index.js', () => ({
+  syncToFlomo: vi.fn(),
+  getFlomoApiEndpoint: vi.fn(() => '')
 }))
 
 const mockRecords = [
@@ -182,5 +188,104 @@ describe('HistoryView', () => {
       const practiceBtn = screen.getByTestId('practice-btn')
       expect(practiceBtn.disabled).toBe(true)
     })
+  })
+})
+
+describe('HistoryView flomo 同步', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    globalThis.window = {
+      ...globalThis.window,
+      utools: { db: {} }
+    }
+    queryHistory.getHistoryRecords.mockReturnValue(mockRecords)
+    queryHistory.getDetailRecord.mockReturnValue(null)
+    getFlomoApiEndpoint.mockReturnValue('')
+    syncToFlomo.mockResolvedValue({ success: true })
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('选中单词 + 有端点 → 同步按钮可见', () => {
+    const detailDoc = { word: 'hello', content: '详解内容', timestamp: '2026-06-18T10:00:00.000Z' }
+    queryHistory.getDetailRecord.mockReturnValue(detailDoc)
+    getFlomoApiEndpoint.mockReturnValue('https://flomoapp.com/api/notes')
+
+    render(<HistoryView />)
+    fireEvent.click(screen.getByText('hello'))
+
+    expect(screen.getByTestId('history-sync-flomo-btn')).toBeInTheDocument()
+  })
+
+  it('选中单词 + 无端点 → 同步按钮不可见', () => {
+    const detailDoc = { word: 'hello', content: '详解内容', timestamp: '2026-06-18T10:00:00.000Z' }
+    queryHistory.getDetailRecord.mockReturnValue(detailDoc)
+    getFlomoApiEndpoint.mockReturnValue('')
+
+    render(<HistoryView />)
+    fireEvent.click(screen.getByText('hello'))
+
+    expect(screen.queryByTestId('history-sync-flomo-btn')).not.toBeInTheDocument()
+  })
+
+  it('点击同步按钮 → syncToFlomo 被调用并进入 syncing 态', async () => {
+    const detailDoc = { word: 'hello', content: '详解内容', timestamp: '2026-06-18T10:00:00.000Z' }
+    queryHistory.getDetailRecord.mockReturnValue(detailDoc)
+    getFlomoApiEndpoint.mockReturnValue('https://flomoapp.com/api/notes')
+
+    let resolveSync
+    syncToFlomo.mockReturnValue(new Promise((resolve) => { resolveSync = resolve }))
+
+    render(<HistoryView />)
+    fireEvent.click(screen.getByText('hello'))
+
+    const btn = screen.getByTestId('history-sync-flomo-btn')
+    fireEvent.click(btn)
+
+    expect(syncToFlomo).toHaveBeenCalledWith('hello', '详解内容')
+    expect(btn).toHaveClass('syncing')
+
+    await act(async () => {
+      resolveSync({ success: true })
+    })
+  })
+
+  it('同步成功 → 按钮短暂 success 后恢复 idle', async () => {
+    const detailDoc = { word: 'hello', content: '详解内容', timestamp: '2026-06-18T10:00:00.000Z' }
+    queryHistory.getDetailRecord.mockReturnValue(detailDoc)
+    getFlomoApiEndpoint.mockReturnValue('https://flomoapp.com/api/notes')
+    syncToFlomo.mockResolvedValue({ success: true })
+
+    render(<HistoryView />)
+    fireEvent.click(screen.getByText('hello'))
+    fireEvent.click(screen.getByTestId('history-sync-flomo-btn'))
+
+    await act(async () => {
+      await vi.runAllTimersAsync()
+    })
+
+    const btn = screen.getByTestId('history-sync-flomo-btn')
+    expect(btn).toHaveClass('idle')
+  })
+
+  it('同步失败 → 按钮短暂 error 后恢复 idle', async () => {
+    const detailDoc = { word: 'hello', content: '详解内容', timestamp: '2026-06-18T10:00:00.000Z' }
+    queryHistory.getDetailRecord.mockReturnValue(detailDoc)
+    getFlomoApiEndpoint.mockReturnValue('https://flomoapp.com/api/notes')
+    syncToFlomo.mockResolvedValue({ success: false, message: '网络不通' })
+
+    render(<HistoryView />)
+    fireEvent.click(screen.getByText('hello'))
+    fireEvent.click(screen.getByTestId('history-sync-flomo-btn'))
+
+    await act(async () => {
+      await vi.runAllTimersAsync()
+    })
+
+    const btn = screen.getByTestId('history-sync-flomo-btn')
+    expect(btn).toHaveClass('idle')
   })
 })

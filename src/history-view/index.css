@@ -220,9 +220,75 @@
 
 .history-right-content {
   flex: 1;
+  min-width: 0;
+  min-height: 0;
   overflow-y: auto;
   line-height: 1.8;
   font-size: 14px;
+}
+
+.history-right-detail-row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.history-right-detail-markdown {
+  flex: 1;
+  min-width: 0;
+}
+
+.history-right-actions {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-right: 8px;
+}
+
+.history-right-sync-flomo-btn {
+  background: #f5f5f5;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 4px 10px;
+  line-height: 1;
+  margin-top: 8px;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.history-right-sync-flomo-btn:hover {
+  background: #e0e0e0;
+  border-color: #999;
+}
+
+.history-right-sync-flomo-btn:disabled {
+  cursor: not-allowed;
+}
+
+.history-right-sync-flomo-btn.syncing {
+  background: #e0e0e0;
+  border-color: #ccc;
+}
+
+.history-right-sync-flomo-btn.syncing .sync-flomo-icon {
+  opacity: 0.4;
+}
+
+.history-right-sync-flomo-btn.success {
+  background: #f6ffed;
+  border-color: #b7eb8f;
+}
+
+.history-right-sync-flomo-btn.error {
+  background: #fff2f0;
+  border-color: #ffccc7;
+}
+
+.history-right-sync-flomo-btn .sync-flomo-icon {
+  width: 16px;
+  height: 16px;
+  display: block;
 }
 
 .history-right-content::-webkit-scrollbar {
@@ -317,6 +383,32 @@
 
   .history-right-content::-webkit-scrollbar-thumb {
     background: #555;
+  }
+
+  .history-right-sync-flomo-btn {
+    background: #444;
+    border-color: #666;
+    color: #ddd;
+  }
+
+  .history-right-sync-flomo-btn:hover {
+    background: #555;
+    border-color: #888;
+  }
+
+  .history-right-sync-flomo-btn.syncing {
+    background: #3a3a3a;
+    border-color: #555;
+  }
+
+  .history-right-sync-flomo-btn.success {
+    background: #162312;
+    border-color: #274916;
+  }
+
+  .history-right-sync-flomo-btn.error {
+    background: #2c1618;
+    border-color: #5c1d24;
   }
 
   .history-empty {
