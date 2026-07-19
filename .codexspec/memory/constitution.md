@@ -65,7 +65,7 @@ Changes:
   （`utools.db` / `dbStorage`）的集成测试。
 - 函数签名变更时 MUST 全局搜索所有调用点，并核对 `expect(mockFn).toHaveBeenCalledWith(...)`
   断言覆盖全部参数。
-- 测试基准：当前 **135** 个测试；新增模块时测试数随之增长并在文档同步。
+- 测试基准：当前 **141** 个测试；新增模块时测试数随之增长并在文档同步。
 - 测试顺序遵循原则 8（强制严格 TDD）：MUST 先编写失败测试（RED），再写最小实现（GREEN），
   最后在测试保护下重构（REFACTOR）；MUST NOT 先写实现再补测试。
 - 理由：历史踩坑——`use-word-query` 漏传 `db` 参数，因被测函数被 `vi.fn()` mock 而未执行真实逻辑，

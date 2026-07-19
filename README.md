@@ -51,7 +51,7 @@ src/
 
 ## 技术栈
 
-- Vitest 4 + Testing Library (140 个测试)
+- Vitest 4 + Testing Library (141 个测试)
 - uTools AI API（流式调用）
 - uTools dbStorage（偏好持久化）
 - uTools MCP Tools（registerTool）

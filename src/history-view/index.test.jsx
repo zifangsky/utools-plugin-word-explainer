@@ -288,4 +288,34 @@ describe('HistoryView flomo 同步', () => {
     const btn = screen.getByTestId('history-sync-flomo-btn')
     expect(btn).toHaveClass('idle')
   })
+
+  it('切换选中单词时同步按钮状态重置为 idle', async () => {
+    const detailDoc1 = { word: 'hello', content: '详解内容1', timestamp: '2026-06-18T10:00:00.000Z' }
+    const detailDoc2 = { word: 'world', content: '详解内容2', timestamp: '2026-06-18T11:00:00.000Z' }
+    queryHistory.getDetailRecord.mockReturnValue(detailDoc1)
+    getFlomoApiEndpoint.mockReturnValue('https://flomoapp.com/api/notes')
+
+    // 先让按钮进入 success 状态
+    syncToFlomo.mockResolvedValue({ success: true })
+    render(<HistoryView />)
+    fireEvent.click(screen.getByText('hello'))
+    fireEvent.click(screen.getByTestId('history-sync-flomo-btn'))
+    await act(async () => { await vi.runAllTimersAsync() })
+
+    // 验证 success 状态
+    let btn = screen.getByTestId('history-sync-flomo-btn')
+    expect(btn).toHaveClass('idle') // 2s 后已恢复
+
+    // 再次同步，然后不等恢复，直接切换单词
+    syncToFlomo.mockResolvedValue({ success: true })
+    fireEvent.click(screen.getByTestId('history-sync-flomo-btn'))
+
+    // 不等 2s 恢复，直接切换到 world
+    queryHistory.getDetailRecord.mockReturnValue(detailDoc2)
+    fireEvent.click(screen.getByText('world'))
+
+    // 切换后按钮应回到 idle
+    btn = screen.getByTestId('history-sync-flomo-btn')
+    expect(btn).toHaveClass('idle')
+  })
 })
