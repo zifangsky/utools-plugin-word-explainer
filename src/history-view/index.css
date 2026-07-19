@@ -285,6 +285,30 @@
   border-color: #ffccc7;
 }
 
+/* 同步按钮状态文字 */
+.sync-status-text {
+  display: block;
+  font-size: 11px;
+  margin-top: 4px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.sync-status-text.sync-syncing {
+  color: #999;
+}
+
+.sync-status-text.sync-success {
+  color: #52c41a;
+}
+
+.sync-status-text.sync-error {
+  color: #ff4d4f;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .history-right-sync-flomo-btn .sync-flomo-icon {
   width: 16px;
   height: 16px;
@@ -409,6 +433,10 @@
   .history-right-sync-flomo-btn.error {
     background: #2c1618;
     border-color: #5c1d24;
+  }
+
+  .sync-status-text.sync-syncing {
+    color: #777;
   }
 
   .history-empty {

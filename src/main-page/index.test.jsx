@@ -206,6 +206,7 @@ describe('MainPage flomo 同步', () => {
 
     expect(syncToFlomo).toHaveBeenCalledWith('test', '详解内容')
     expect(btn).toHaveClass('syncing')
+    expect(screen.getByTestId('sync-status-text')).toHaveTextContent('同步中...')
 
     // resolve
     await act(async () => {
@@ -226,9 +227,10 @@ describe('MainPage flomo 同步', () => {
       await vi.runAllTimersAsync()
     })
 
-    // 2s 后恢复 idle
+    // 2s 后恢复 idle，状态文字消失
     const btn = screen.getByTestId('sync-flomo-btn')
     expect(btn).toHaveClass('idle')
+    expect(screen.queryByTestId('sync-status-text')).not.toBeInTheDocument()
   })
 
   it('syncToFlomo 返回 error → 按钮变红 + 显示错误消息，3s 后恢复', async () => {
@@ -248,6 +250,7 @@ describe('MainPage flomo 同步', () => {
     // 3s 后恢复
     const btn = screen.getByTestId('sync-flomo-btn')
     expect(btn).toHaveClass('idle')
+    expect(screen.queryByTestId('sync-status-text')).not.toBeInTheDocument()
   })
 })
 

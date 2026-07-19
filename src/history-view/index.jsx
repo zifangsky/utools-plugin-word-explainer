@@ -43,7 +43,7 @@ export function HistoryView () {
   const [selectedIds, setSelectedIds] = useState(() => new Set())
   const [selectedWord, setSelectedWord] = useState('')
   const [deleteConfirming, setDeleteConfirming] = useState(false)
-  const { endpoint, syncStatus, handleSync, resetSync, buildTitle } = useFlomoSync(selectedWord, detailContent)
+  const { endpoint, syncStatus, syncMessage, handleSync, resetSync } = useFlomoSync(selectedWord, detailContent)
 
   // 加载记录
   useEffect(() => {
@@ -255,15 +255,24 @@ export function HistoryView () {
               </div>
               <div className='history-right-actions'>
                 {endpoint && (
-                  <button
-                    className={`history-right-sync-flomo-btn ${syncStatus}`}
-                    data-testid='history-sync-flomo-btn'
-                    onClick={handleSync}
-                    disabled={syncStatus === 'syncing'}
-                    title={buildTitle()}
-                  >
-                    <img src={flomoIcon} alt='flomo' className='sync-flomo-icon' />
-                  </button>
+                  <>
+                    <button
+                      className={`history-right-sync-flomo-btn ${syncStatus}`}
+                      data-testid='history-sync-flomo-btn'
+                      onClick={handleSync}
+                      disabled={syncStatus === 'syncing'}
+                      title='同步到 flomo'
+                    >
+                      <img src={flomoIcon} alt='flomo' className='sync-flomo-icon' />
+                    </button>
+                    {syncStatus !== 'idle' && (
+                      <span className={`sync-status-text sync-${syncStatus}`} data-testid='history-sync-status-text'>
+                        {syncStatus === 'syncing' && '同步中...'}
+                        {syncStatus === 'success' && '已同步'}
+                        {syncStatus === 'error' && (syncMessage || '同步失败')}
+                      </span>
+                    )}
+                  </>
                 )}
               </div>
             </div>

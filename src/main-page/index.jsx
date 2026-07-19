@@ -214,15 +214,24 @@ export default function MainPage () {
             </div>
             <div className='result-actions'>
               {endpoint && (
-                <button
-                  className={`sync-flomo-btn ${syncStatus}`}
-                  data-testid='sync-flomo-btn'
-                  onClick={handleSyncFlomo}
-                  disabled={syncStatus === 'syncing'}
-                  title={syncStatus === 'syncing' ? '同步中...' : syncStatus === 'success' ? '已同步' : syncStatus === 'error' ? syncMessage : '同步到 flomo'}
-                >
-                  <img src={flomoIcon} alt='flomo' className='sync-flomo-icon' />
-                </button>
+                <>
+                  <button
+                    className={`sync-flomo-btn ${syncStatus}`}
+                    data-testid='sync-flomo-btn'
+                    onClick={handleSyncFlomo}
+                    disabled={syncStatus === 'syncing'}
+                    title='同步到 flomo'
+                  >
+                    <img src={flomoIcon} alt='flomo' className='sync-flomo-icon' />
+                  </button>
+                  {syncStatus !== 'idle' && (
+                    <span className={`sync-status-text sync-${syncStatus}`} data-testid='sync-status-text'>
+                      {syncStatus === 'syncing' && '同步中...'}
+                      {syncStatus === 'success' && '已同步'}
+                      {syncStatus === 'error' && (syncMessage || '同步失败')}
+                    </span>
+                  )}
+                </>
               )}
             </div>
           </div>

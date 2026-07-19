@@ -251,6 +251,7 @@ describe('HistoryView flomo 同步', () => {
 
     expect(syncToFlomo).toHaveBeenCalledWith('hello', '详解内容')
     expect(btn).toHaveClass('syncing')
+    expect(screen.getByTestId('history-sync-status-text')).toHaveTextContent('同步中...')
 
     await act(async () => {
       resolveSync({ success: true })
@@ -273,6 +274,7 @@ describe('HistoryView flomo 同步', () => {
 
     const btn = screen.getByTestId('history-sync-flomo-btn')
     expect(btn).toHaveClass('idle')
+    expect(screen.queryByTestId('history-sync-status-text')).not.toBeInTheDocument()
   })
 
   it('同步失败 → 按钮短暂 error 后恢复 idle', async () => {
@@ -291,6 +293,7 @@ describe('HistoryView flomo 同步', () => {
 
     const btn = screen.getByTestId('history-sync-flomo-btn')
     expect(btn).toHaveClass('idle')
+    expect(screen.queryByTestId('history-sync-status-text')).not.toBeInTheDocument()
   })
 
   it('切换选中单词时同步按钮状态重置为 idle', async () => {
