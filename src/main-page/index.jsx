@@ -1,16 +1,16 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useWordQuery } from '../use-word-query/index.js'
 import { MarkdownView } from '../markdown-view/index.jsx'
 import { HistoryView } from '../history-view/index.jsx'
 import { getPreferredModel, setPreferredModel } from '../model-preference/index.js'
 import { getSaveQueryHistory, setSaveQueryHistory } from '../history-preference/index.js'
 import {
-  syncToFlomo,
   getFlomoApiEndpoint,
   getFlomoTags,
   setFlomoApiEndpoint,
   setFlomoTags
 } from '../sync/index.js'
+import { useFlomoSync } from '../sync/useFlomoSync.js'
 import flomoIcon from '../../assets/flomo_favicon.ico'
 import './index.css'
 
@@ -46,11 +46,9 @@ export default function MainPage () {
   const [models, setModels] = useState([])
   const [selectedModel, setSelectedModel] = useState('')
   const [saveEnabled, setSaveEnabled] = useState(() => getSaveQueryHistory())
-  const [syncStatus, setSyncStatus] = useState('idle')
-  const [syncMessage, setSyncMessage] = useState('')
   const [endpoint, setEndpoint] = useState(() => getFlomoApiEndpoint())
   const [tags, setTags] = useState(() => getFlomoTags())
-  const timeoutRef = useRef(null)
+  const { syncStatus, syncMessage, handleSync } = useFlomoSync(word, result)
 
   useEffect(() => {
     const preferred = getPreferredModel()
@@ -60,12 +58,6 @@ export default function MainPage () {
       window.utools.allAiModels().then(list => {
         setModels(list || [])
       }).catch(() => {})
-    }
-  }, [])
-
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current)
     }
   }, [])
 
@@ -84,21 +76,6 @@ export default function MainPage () {
     const next = e.target.checked
     setSaveEnabled(next)
     setSaveQueryHistory(next)
-  }
-
-  const handleSyncFlomo = async () => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current)
-    setSyncStatus('syncing')
-    setSyncMessage('')
-    const res = await syncToFlomo(word, result)
-    if (res.success) {
-      setSyncStatus('success')
-      timeoutRef.current = setTimeout(() => setSyncStatus('idle'), 2000)
-    } else {
-      setSyncStatus('error')
-      setSyncMessage(res.message || '同步失败')
-      timeoutRef.current = setTimeout(() => setSyncStatus('idle'), 3000)
-    }
   }
 
   if (currentView === VIEW_SETTINGS) {
@@ -218,7 +195,7 @@ export default function MainPage () {
                   <button
                     className={`sync-flomo-btn ${syncStatus}`}
                     data-testid='sync-flomo-btn'
-                    onClick={handleSyncFlomo}
+                    onClick={handleSync}
                     disabled={syncStatus === 'syncing'}
                     title='同步到 flomo'
                   >

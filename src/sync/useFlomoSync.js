@@ -11,11 +11,10 @@ function safeGetEndpoint () {
 
 /**
  * flomo 同步状态管理 Hook
- * 封装同步按钮的状态机、网络调用和定时器生命周期。
  *
  * @param {string} word - 当前单词
  * @param {string} content - 详解正文
- * @returns {{ endpoint, syncStatus, syncMessage, handleSync, resetSync, buildTitle }}
+ * @returns {{ endpoint, syncStatus, syncMessage, handleSync, resetSync }}
  */
 export function useFlomoSync (word, content) {
   const endpointRef = useRef(null)
@@ -26,28 +25,22 @@ export function useFlomoSync (word, content) {
   const [syncStatus, setSyncStatus] = useState('idle')
   const [syncMessage, setSyncMessage] = useState('')
   const timeoutRef = useRef(null)
-  const wordRef = useRef(word)
-  const contentRef = useRef(content)
-  wordRef.current = word
-  contentRef.current = content
 
-  // 组件卸载时清理定时器
   useEffect(() => {
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current)
     }
   }, [])
 
-  const handleSync = useCallback(async () => {
-    const w = wordRef.current
-    const c = contentRef.current
-    if (!w || !c) return
+  // 纯闭包捕获 word/content — 与 main-page 内联代码模式完全一致
+  const handleSync = async () => {
+    if (!word || !content) return
 
     if (timeoutRef.current) clearTimeout(timeoutRef.current)
     setSyncStatus('syncing')
     setSyncMessage('')
 
-    const res = await syncToFlomo(w, c)
+    const res = await syncToFlomo(word, content)
     if (res.success) {
       setSyncStatus('success')
       timeoutRef.current = setTimeout(() => setSyncStatus('idle'), 2000)
@@ -56,7 +49,7 @@ export function useFlomoSync (word, content) {
       setSyncMessage(res.message || '同步失败')
       timeoutRef.current = setTimeout(() => setSyncStatus('idle'), 3000)
     }
-  }, []) // 使用 ref 避免依赖 word/content 变化
+  }
 
   const resetSync = useCallback(() => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current)
@@ -64,19 +57,11 @@ export function useFlomoSync (word, content) {
     setSyncMessage('')
   }, [])
 
-  const buildTitle = useCallback(() => {
-    if (syncStatus === 'syncing') return '同步中...'
-    if (syncStatus === 'success') return '已同步'
-    if (syncStatus === 'error') return syncMessage || '同步失败'
-    return '同步到 flomo'
-  }, [syncStatus, syncMessage])
-
   return {
     endpoint: endpointRef.current,
     syncStatus,
     syncMessage,
     handleSync,
-    resetSync,
-    buildTitle
+    resetSync
   }
 }
