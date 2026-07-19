@@ -453,6 +453,14 @@
   cursor: not-allowed;
 }
 
+.history-del-btn.confirming {
+  background: #ff4d4f;
+}
+
+.history-del-btn.confirming:hover {
+  background: #ff7875;
+}
+
 .history-practice-btn {
   margin-left: auto;
   padding: 4px 16px;

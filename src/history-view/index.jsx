@@ -42,6 +42,7 @@ export function HistoryView () {
   const [playingWord, setPlayingWord] = useState(null)
   const [selectedIds, setSelectedIds] = useState(() => new Set())
   const [selectedWord, setSelectedWord] = useState('')
+  const [deleteConfirming, setDeleteConfirming] = useState(false)
   const { endpoint, syncStatus, handleSync, resetSync, buildTitle } = useFlomoSync(selectedWord, detailContent)
 
   // 加载记录
@@ -121,24 +122,29 @@ export function HistoryView () {
     })
   }, [filteredRecords])
 
-  // 批量删除（带二次确认）
+  // 批量删除（二次点击确认，无弹窗）
   const handleDelete = useCallback(() => {
     if (selectedIds.size === 0) return
-    const ids = [...selectedIds]
-    if (window.confirm(`确定删除 ${ids.length} 条记录吗？`)) {
-      const db = getDb()
-      if (db) {
-        deleteQueryRecords(db, ids)
-        const result = getHistoryRecords(db, timeFilter)
-        setRecords(result)
-      }
-      setSelectedId(null)
-      setSelectedWord('')
-      setDetailContent(null)
-      resetSync()
-      setSelectedIds(new Set())
+
+    if (!deleteConfirming) {
+      setDeleteConfirming(true)
+      return
     }
-  }, [selectedIds, timeFilter])
+
+    const ids = [...selectedIds]
+    const db = getDb()
+    if (db) {
+      deleteQueryRecords(db, ids)
+      const result = getHistoryRecords(db, timeFilter)
+      setRecords(result)
+    }
+    setSelectedId(null)
+    setSelectedWord('')
+    setDetailContent(null)
+    resetSync()
+    setSelectedIds(new Set())
+    setDeleteConfirming(false)
+  }, [selectedIds, timeFilter, deleteConfirming])
 
   return (
     <div className='history-view' data-testid='history-view'>
@@ -218,12 +224,12 @@ export function HistoryView () {
             全选
           </label>
           <button
-            className='history-del-btn'
+            className={`history-del-btn${deleteConfirming ? ' confirming' : ''}`}
             disabled={selectedIds.size === 0}
             onClick={handleDelete}
             data-testid='delete-selected-btn'
           >
-            删除
+            {deleteConfirming ? '确认删除' : '删除'}
           </button>
           <button
             className='history-practice-btn'

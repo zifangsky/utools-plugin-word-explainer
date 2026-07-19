@@ -159,26 +159,30 @@ describe('HistoryView', () => {
     })
 
     it('点击删除并确认后调用 deleteQueryRecords 并刷新列表', () => {
-      window.confirm = vi.fn(() => true)
       render(<HistoryView />)
 
       fireEvent.click(screen.getByTestId('select-detail/ts_hello'))
+      // 第一次点击：进入确认态
+      fireEvent.click(screen.getByTestId('delete-selected-btn'))
+      expect(screen.getByText('确认删除')).toBeInTheDocument()
+      // 第二次点击：执行删除
       fireEvent.click(screen.getByTestId('delete-selected-btn'))
 
-      expect(window.confirm).toHaveBeenCalledWith('确定删除 1 条记录吗？')
       expect(queryHistory.deleteQueryRecords).toHaveBeenCalledWith(
         expect.anything(),
         ['detail/ts_hello']
       )
+      // 删除后按钮恢复为「删除」
+      expect(screen.getByText('删除')).toBeInTheDocument()
     })
 
-    it('删除确认弹窗取消时不调用 deleteQueryRecords', () => {
-      window.confirm = vi.fn(() => false)
+    it('点击删除后进入确认态，不执行删除', () => {
       render(<HistoryView />)
 
       fireEvent.click(screen.getByTestId('select-detail/ts_hello'))
       fireEvent.click(screen.getByTestId('delete-selected-btn'))
 
+      expect(screen.getByText('确认删除')).toBeInTheDocument()
       expect(queryHistory.deleteQueryRecords).not.toHaveBeenCalled()
     })
 
