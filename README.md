@@ -46,11 +46,12 @@ src/
 ├── query-history/              # 查词历史数据层（save/getHistoryRecords/getDetailRecord/deleteQueryRecords）
 ├── history-view/               # 查词历史 UI（搜索、时间筛选、单词卡片、详情）
 ├── mcp-tools/                  # MCP 工具 handler
+├── sync/                       # flomo 同步（偏好存取 + 内容构建 + API 调用）
 ```
 
 ## 技术栈
 
-- Vitest 4 + Testing Library (106 个测试)
+- Vitest 4 + Testing Library (133 个测试)
 - uTools AI API（流式调用）
 - uTools dbStorage（偏好持久化）
 - uTools MCP Tools（registerTool）
