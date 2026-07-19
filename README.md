@@ -36,7 +36,7 @@ npm run build
 ```
 src/
 ├── App.jsx                     # 根组件
-├── MainPage/                   # 主界面 + 设置面板
+├── main-page/                   # 主界面 + 设置面板
 ├── prompt-template/            # 7 板块提示词模板
 ├── ai-call/                    # AI 调用封装（流式）
 ├── markdown-view/              # Markdown 富文本渲染

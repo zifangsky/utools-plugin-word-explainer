@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import MainPage from './MainPage'
+import MainPage from './main-page'
 
 export default function App () {
   const [visible, setVisible] = useState(true)

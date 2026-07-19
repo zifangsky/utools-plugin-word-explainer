@@ -113,8 +113,11 @@
 }
 
 .history-card-checkbox {
-  margin: 0;
   flex-shrink: 0;
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  margin-right: 2px;
   cursor: pointer;
 }
 
@@ -319,15 +322,6 @@
   .history-empty {
     color: #666;
   }
-}
-
-/* ===== 卡片复选框 ===== */
-.history-card-checkbox {
-  flex-shrink: 0;
-  width: 15px;
-  height: 15px;
-  margin-right: 2px;
-  cursor: pointer;
 }
 
 /* ===== 底部操作栏 ===== */

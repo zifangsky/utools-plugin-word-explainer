@@ -1,3 +1,6 @@
+// MCP 工具 handler 工厂函数。
+// 注意：此模块仅被 public/preload/tools.js (CJS) 通过语义等价的内联实现消费，
+// src/ 中无直接导入。保留此模块用于单元测试 + 为 preload 代码提供参考实现。
 import { buildMessages } from '../prompt-template/index.js'
 
 export function createExplainWordHandler (aiClient, modelPreference) {

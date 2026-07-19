@@ -4,6 +4,8 @@ const https = require('node:https')
 const http = require('node:http')
 
 // 通过 window 对象向渲染进程注入 nodejs 能力
+// NOTE: preload 运行于 uTools 主进程 (CommonJS)，使用分号为 CJS 惯例；
+// src/ 运行于 webview (ESM)，使用无分号风格。两者不可相互导入，需手动保持语义同步。
 window.services = {
   // 读文件
   readFile (file) {

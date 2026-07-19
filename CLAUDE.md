@@ -20,7 +20,7 @@ src/
 ├── main.jsx                    # React 入口
 ├── main.css                    # 全局样式
 ├── App.jsx                     # 根组件 — utools 生命周期 (onPluginEnter/Out)
-├── MainPage/
+├── main-page/
 │   ├── index.jsx               # 主界面 + 设置面板 + 查词历史视图切换 (编排组件)
 │   └── index.css               # 布局、按钮、结果区、暗色模式
 ├── prompt-template/
@@ -63,7 +63,7 @@ public/preload/
 └── prompt.js                   # CommonJS 版 systemPrompt + buildMessages
 ```
 
-- **依赖方向**：MainPage → useWordQuery / markdown-view / model-preference / history-view / sync，useWordQuery → prompt-template / ai-call / query-history，history-view → query-history / markdown-view，无循环依赖
+- **依赖方向**：main-page → useWordQuery / markdown-view / model-preference / history-view / sync，useWordQuery → prompt-template / ai-call / query-history，history-view → query-history / markdown-view，无循环依赖
 - **MCP 工具**：通过 `utools.registerTool('explain_word', handler)` 在 preload 中注册，handler 流式调用 AI + 每 2s 线性进度上报（15s 上限）
 - **AI 调用**：流式模式 (`utools.ai(option, streamCallback)`)，边接收边渲染
 - **存储**：`utools.dbStorage` (key-value，模型偏好 `preferredModel` + 保存查词历史开关 `saveQueryHistory` + flomo 端点 `flomoApiEndpoint` + flomo 标签 `flomoTags`) + `utools.db` (文档型，查词历史)
