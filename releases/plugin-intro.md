@@ -40,4 +40,4 @@ React 19 + Vite 6 + uTools API + Node.js (preload)
 
 
 【开源协议】
-本项目基于 Apache-2.0 license 协议开源。141 项测试全绿，standard lint 零违规。
+本项目基于 Apache-2.0 license 协议开源。
