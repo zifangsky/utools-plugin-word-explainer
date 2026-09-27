@@ -7,31 +7,33 @@
 
 ## 优先使用图谱工具的场景
 
-- **查找代码**：`semantic_search_nodes` 或 `query_graph` 替代 Grep
-- **理解影响范围**：`get_impact_radius` 替代手动追踪 import
-- **代码审查**：`detect_changes` + `get_review_context` 替代逐文件阅读
-- **查找关系**：`query_graph` 查询调用方 / 被调用方 / 导入关系 / 测试
-- **架构问题**：`get_architecture_overview`
+- **查找代码**：`semantic_search_nodes_tool` 或 `query_graph_tool` 替代 Grep
+- **代码审查**：`detect_changes_tool` + `get_review_context_tool` 替代逐文件阅读
+- **查找关系**：`query_graph_tool` 查询调用方 / 被调用方 / 导入关系 / 测试
 
-## 关键工具
+## 已启用的工具（4 个）
+
+本机 MCP 通过 `--tools` 白名单启动，**只暴露下列 4 个**；包内另有
+`get_impact_radius_tool` / `get_affected_flows_tool` / `get_architecture_overview_tool` /
+`refactor_tool` / `list_flows_tool` / `list_communities_tool` 等，默认未放行：
 
 | 工具 | 用途 |
 |------|------|
-| `detect_changes` | 审查变更 — 风险评分分析 |
-| `get_review_context` | 审查上下文 — 包含源码片段 |
-| `get_impact_radius` | 了解变更的爆炸半径 |
-| `get_affected_flows` | 判断哪些执行路径受影响 |
-| `query_graph` | 追踪调用方、被调用方、导入、测试 |
-| `semantic_search_nodes` | 按名称或关键词查找函数 / 类 |
-| `get_architecture_overview` | 理解高层代码库结构 |
-| `refactor_tool` | 规划重命名、发现死代码 |
+| `detect_changes_tool` | 审查变更 — 风险评分分析 |
+| `get_review_context_tool` | 审查上下文 — 包含源码片段 |
+| `query_graph_tool` | 追踪调用方、被调用方、导入、测试 |
+| `semantic_search_nodes_tool` | 按名称或关键词查找函数 / 类 |
+
+> 需要其余工具时，在 `~/.workbuddy/mcp.json` 的 `code-review-graph` 项中把工具名
+> （带 `_tool` 后缀）追加进 `args` 的 `--tools` 列表（逗号分隔），重启客户端后生效。
 
 ## 工作流
 
-1. 文件变更后自动增量更新图谱（通过钩子）
-2. 审查变更用 `detect_changes`
-3. 理解影响范围用 `get_affected_flows`
-4. 检查测试覆盖用 `query_graph pattern="tests_for"`
+1. **图谱不会自动更新** —— 本机未配置任何钩子，代码变更后 MUST 手动跑 CLI（见下节），
+   否则图谱工具读到的是过期索引（2026-09-27 曾发现索引停留在 4 个月前的提交）
+2. 审查变更用 `detect_changes_tool`
+3. 追踪调用方 / 被调用方 / 导入 / 测试用 `query_graph_tool`
+4. 按名称或关键词定位函数 / 类用 `semantic_search_nodes_tool`
 
 ## 索引维护（CLI）
 
