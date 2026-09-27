@@ -28,8 +28,7 @@ dist-ssr
 *.sln
 *.sw?
 
-# Claude Code
-.claude/
+# MCP 客户端本地配置（含机器特定路径与可能的凭据，不入库）
 .mcp.json
 
 # Test files

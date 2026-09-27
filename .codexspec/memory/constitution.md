@@ -1,6 +1,35 @@
 <!--
 SYNC IMPACT REPORT
 ==================
+Version: 1.2.1 → 1.3.0
+Bump Rationale: MINOR — 治理文档集实质变更。原「架构 + 红线」权威参考 `CLAUDE.md`（含 uTools 平台实测取证）随项目弃用 Claude Code 而移除，其内容迁移至 `README.md`（架构 / 分支红线 / 文档索引）与新增的 `docs/utools-platform.md`（平台契约与实测取证）、`docs/agents/code-review-graph.md`（图谱工具用法）。据此重定义原则 6 的文档同步对象、代码审查的权威架构参考、PR 检查项与「必含文档」清单，并补齐分支命名前缀表。属章节的实质性变更而非措辞澄清，故取 MINOR。
+
+Changes:
+- Removed: 根目录 `CLAUDE.md`（内容已迁移，见下）；仓库 `.mcp.json`（Claude Code 专用 MCP 配置，改用各客户端本机配置）
+- Added: `docs/utools-platform.md`（uTools 平台契约与实测取证）、`docs/agents/code-review-graph.md`（图谱工具用法）
+- Modified: 原则 1「理由」——依赖方向权威参考 `CLAUDE.md` → `README.md`「架构」
+- Modified: 原则 5「理由」——引用来源 `CLAUDE.md` → `README.md`
+- Modified: 原则 6「文档与代码同步」——同步对象由 `CLAUDE.md` + `README.md` 合并为 `README.md`
+- Modified: 代码规范「文件修改」——按行号脚本约束对象 `CLAUDE.md` → `README.md`
+- Modified: 分支策略（红线）——补齐命名前缀表（feat / fix / docs / chore / refactor / test / style），并把 `bug/` 更正为实际使用的 `fix/`，补「提交前 MUST 确认分支」
+- Modified: 代码审查——权威架构参考 `CLAUDE.md` → `README.md`「架构」
+- Modified: PR 要求——文档同步检查项去掉 `CLAUDE.md`
+- Modified: 文档要求——「必含文档」清单以 `docs/utools-platform.md` 与 `docs/agents/code-review-graph.md` 取代 `CLAUDE.md`
+- Modified: 顶部版本号 1.2.1 → 1.3.0；底部版本行同步；最后修订 2026-09-27
+
+Template Consistency Check:
+- .codexspec/templates/docs/tasks-template-simple.md: ✅ aligned（无计数引用）
+- .codexspec/templates/docs/tasks-template-detailed.md: ✅ aligned（无计数引用）
+- README.md: ✅ aligned（「Vitest 4 + Testing Library (227 个测试)」与实际一致）
+- CONTEXT.md: ✅ aligned（无计数引用）
+- docs/utools-platform.md: ✅ aligned（无计数引用）
+
+Deferred TODOs:
+- 「合并后 MUST 删除源分支」与历史保留发布分支的做法仍存冲突（见 `.workbuddy/memory/MEMORY.md`），本次未处理
+
+---
+
+历史记录 (Historical)
 Version: 1.2.0 → 1.2.1
 Bump Rationale: PATCH — 输入校验失败时的可观察行为修正。原则 3 补充「校验不通过 MUST 清空上一次的查询结果」，属既有「MUST 向用户给出提示」条款的配套细化（避免错误提示与不相关的旧结果同屏），未新增或收窄可接受输入集、未增删原则与章节，故取 PATCH。同时把原则 2 / 原则 6 的测试计数更新为实测值 227（本次新增 2 条：1 条行为修正、1 条区分两类 error 的回归锁）。
 
@@ -164,7 +193,7 @@ Changes:
 
 本插件为运行在 uTools 平台的桌面插件：用户输入单个英文单词，经 `utools.ai()` 流式调用大模型，
 生成含 7 个板块的结构化详解；同时以 MCP 工具 `explain_word` 对外暴露查词能力，供外部 AI Agent 调用。
-本宪法从根目录 `CLAUDE.md`、`CONTEXT.md`、`README.md`、`docs/agents/*`、`.claude/commands/codexspec/*`、
+本宪法从根目录 `README.md`、`CONTEXT.md`、`docs/agents/*`、`docs/utools-platform.md`、
 `.workbuddy/memory/MEMORY.md` 提炼而来，取代原先的通用占位文件。
 
 ## 核心原则 (Core Principles)
@@ -178,7 +207,7 @@ Changes:
   `useWordQuery → prompt-template / ai-call / query-history`；
   `history-view → query-history / markdown-view`。
 - MUST NOT 引入循环依赖。
-- 理由：CLAUDE.md 已固化该依赖方向且无环；循环依赖会破坏测试隔离与构建可维护性，且历史上
+- 理由：README.md「架构」章节已固化该依赖方向且无环；循环依赖会破坏测试隔离与构建可维护性，且历史上
   mock 曾掩盖跨模块参数错误（见原则 2）。
 
 ### 2. 行为驱动测试（不可妥协）
@@ -220,16 +249,16 @@ Changes:
 - AI 输出 MUST 采用流式逐段渲染：每个 chunk 经 `streamCallback` 更新 React state，边接收边渲染。
 - MCP 工具 MUST 上报线性进度：每 2s 一次，单次调用上限 15s。
 - MUST NOT 阻塞 UI 等待完整响应。
-- 理由：流式渲染降低感知延迟，改善用户体验（CONTEXT.md / CLAUDE.md）。
+- 理由：流式渲染降低感知延迟，改善用户体验（CONTEXT.md / README.md）。
 
 ### 6. 文档与代码同步
 
-- 新增 `src/<module>/` 或新增测试后，MUST 同步更新 `CLAUDE.md`（架构图树形结构、依赖方向、
-  存储说明）与 `README.md`（项目结构树、测试计数）。
+- 新增 `src/<module>/` 或新增测试后，MUST 同步更新 `README.md`（项目结构树、测试计数、依赖方向与
+  存储说明）。
 - 文档中的测试计数 MUST 与实际 `npm test` 通过数一致（当前 **227**），MUST NOT 出现数字脱节。
 - 版本发布说明 MUST 记录于 `releases/vX.Y.Z.md`，插件介绍于 `releases/plugin-intro.md`。
 - 涉及构建流程变更时 MUST 同步 `package.json` 与 `.gitignore` 的构建产物路径。
-- 理由：历史上 CLAUDE.md/README.md 曾滞后（「58 个测试」实为 86），同步规则避免误导。
+- 理由：历史上 README.md 曾滞后（「58 个测试」实为 86），同步规则避免误导。
 
 ### 7. 简洁优先（YAGNI）
 
@@ -281,7 +310,7 @@ Changes:
   构建产物 MUST NOT 入 git（`.gitignore` 已忽略 `dist/`、`public/assets/`、`public/index-*.js|css`、`public/index.html`）。
   注：2026-09-27 核查确认 `vite.config.js` **从未**设置过 `build.assetsDir`（全历史检索无命中），
   原条款所述方案与实际实现不符，故按实际实现重写。
-- **文件修改**：精准修改、匹配现有风格；修改含 Unicode box-drawing 字符（树形图）的 `CLAUDE.md` 时，
+- **文件修改**：精准修改、匹配现有风格；修改含 Unicode box-drawing 字符（树形图）的 `README.md` 时，
   MUST 用脚本按行号操作而非文本匹配
 
 ## 开发工作流 (Development Workflow)
@@ -289,8 +318,10 @@ Changes:
 ### 分支策略（红线）
 
 - MUST NOT 直接提交到 `main`；所有修改 MUST 经 PR 合并
-- 功能分支：`feat/<功能名>`（如 `feat/mcp-tools`）
-- 缺陷分支：`bug/<问题描述>`（如 `bug/settings-alignment`）
+- 分支命名按改动类型：`feat/<desc>`（新功能）、`fix/<desc>`（缺陷修复）、`docs/<desc>`（文档）、
+  `chore/<desc>`（版本 / 构建 / 杂项）、`refactor/<desc>`（重构）、`test/<desc>`（测试）、
+  `style/<desc>`（样式）
+- 提交前 MUST 执行 `git branch --show-current` 确认为分支
 - 合并前 MUST 至少 1 人 review approve（GitHub 分支保护已开启）
 - 合并后 MUST 删除源分支
 
@@ -301,7 +332,7 @@ Changes:
 
 ### 代码审查
 
-- `CLAUDE.md` 为权威架构参考；审查 MUST 验证无新增循环依赖、preload 与 `src` 同步
+- `README.md`「架构」章节为权威架构参考；审查 MUST 验证无新增循环依赖、preload 与 `src` 同步
 - 探索代码时优先使用 code-review-graph MCP 图谱工具（替代 Grep/Glob/Read）
 - 问题追踪经 GitHub Issues，`gh` CLI 操作；分诊标签：
   `needs-triage` / `needs-info` / `ready-for-agent` / `ready-for-human` / `wontfix`
@@ -321,7 +352,7 @@ Changes:
 - [ ] CI 全绿
 - [ ] 至少 1 个 approve
 - [ ] 无未解决对话
-- [ ] 文档同步完成（CLAUDE.md / README.md 测试计数与架构图）
+- [ ] 文档同步完成（README.md 测试计数与结构树）
 
 ## 安全要求 (Security Requirements)
 
@@ -340,9 +371,10 @@ Changes:
 ## 文档要求 (Documentation Requirements)
 
 - **文档语言**：zh-CN（与 `.codexspec/config.yml` 的 `language.output` 一致）
-- **必含文档**：`CLAUDE.md`（架构 + 红线）、`README.md`（开发流程 + 结构）、`CONTEXT.md`（领域术语）、
-  `docs/agents/*`（issue-tracker / triage-labels / domain）、`releases/vX.Y.Z.md`（发布说明）
-- 新增模块 MUST 同步 `CLAUDE.md` + `README.md` 测试计数与结构树
+- **必含文档**：`README.md`（架构 + 开发流程 + 结构 + 红线）、`CONTEXT.md`（领域术语）、
+  `docs/utools-platform.md`（uTools 平台契约与实测取证）、`docs/agents/*`（issue-tracker /
+  triage-labels / domain / code-review-graph）、`releases/vX.Y.Z.md`（发布说明）
+- 新增模块 MUST 同步 `README.md` 测试计数与结构树
 - 架构决策 SHOULD 记录于 `docs/adr/`（ADR）
 - 过程文档（PRD / Issue 切片）存放于 `docs/` 与 `.github/issues/`
 
@@ -354,4 +386,4 @@ Changes:
 - **冲突处理**：用户请求与宪法冲突时，MUST 停止并说明违反的原则，提出合规替代方案，须用户显式确认方可覆盖。
 - **所有 PR / 审查 MUST 验证合规**。
 
-**版本**: 1.2.1 | **批准日期**: 2026-07-06 | **最后修订**: 2026-09-27
+**版本**: 1.3.0 | **批准日期**: 2026-07-06 | **最后修订**: 2026-09-27
