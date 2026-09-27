@@ -8,24 +8,34 @@ React + Vite 工程，在 uTools 平台中运行的桌面插件。用户输入�
 ## 常用命令
 
 ```bash
-npm run dev      # 启动开发服务器 (localhost:5173)
+npm run dev      # 启动开发服务器 (localhost:5173) — 只提供前端代码，不注册指令
 npm run build    # 生产构建到 dist/
 npm run deploy   # 构建 + 复制产物到 public/（uTools 应用商店打包用）
 npm test         # 运行 149 个测试 (vitest)
 ```
 
-> **⚠️ 修改 `public/plugin.json` 后必须重新「接入开发」**
+> **⚠️ 改了 `public/plugin.json` 后：完全退出 uTools 再重启即可生效**
 >
-> uTools 只在「接入开发 / 安装（开发模式）」时读取 `plugin.json` 中声明的指令
-> （功能指令、匹配指令、`tools`）。`npm run dev` 仅热更新**前端代码**，
-> **不会**重新注册指令。
+> 依据（实测）：uTools **不把开发插件的 `features` 持久化到数据库**，只保存 `plugin.json`
+> 的**路径**，指令列表在**启动时**从该文件现读。自查方法 —— 在
+> `%APPDATA%\uTools\database` 中检索：商店版插件有 `//feature/<pluginId>/<code>` 记录，
+> 本插件 `ztwpfbsl` **一条都没有**（连旧指令的 label 也搜不到）。
 >
-> 因此改了 `plugin.json` 却未重新接入，会出现「指令已写好、前端也正常，但主搜索框匹配不到
-> 本插件」的假象。处置：uTools 开发者工具中对本项目重新「接入开发」（或先
-> 「卸载（开发模式）」再接入）；仍不生效则完全退出 uTools 后重启再试。
+> 由此推出两条结论：
+>
+> 1. **`npm run dev` 与指令注册无关**——它只热更新前端代码，重启它不会让新指令出现；
+> 2. **让新 `plugin.json` 生效只需「完全退出 uTools + 重新启动」**，不必卸载重装。
+>    「接入开发」只在首次添加项目或项目路径变更时才需要。热键为 `Alt+Space`。
+>
+> **验证手段**：uTools 开发者工具的本项目详情页有「功能 / 匹配」两个标签，「匹配」页会列出
+> 解析到的匹配指令（类型、正则、最少 / 最多字符数）。页面上能看到新指令 = `plugin.json`
+> 已被正确解析；此时若主搜索框仍匹配不到，才需要重新「接入开发」（或先「卸载（开发模式）」
+> 再接入）。
 >
 > 另注：`public/` 是 uTools 实际加载的目录，`dist/` 是 `vite build` 产物（构建时会把 `public/`
 > 的内容一并拷入）。**`plugin.json` 的唯一源是 `public/plugin.json`**，不要改 `dist/` 下的副本。
+> `%APPDATA%\uTools\plugins\*.asar` 中可能残留本插件曾经的商店打包副本（内嵌**旧版**
+> `plugin.json`），那是下载缓存而非活动安装，排查时可忽略。
 
 ## 架构概述
 

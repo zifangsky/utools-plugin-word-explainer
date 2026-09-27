@@ -45,12 +45,42 @@
      「进阶（代码热更新）」亦只针对入口文件 URL，均未涵盖 `plugin.json` 的指令注册。
   4. `public/plugin.json` 本身经逐字段比对官方示例确认写法正确（含 `match` 需带前后斜杠、
      匹配指令需独立成 feature），正则对 12 组输入判定与 spec REQ-001 期望逐条一致。
-- **处置**: 在 uTools 开发者工具中对本项目重新「**接入开发**」（或先「卸载（开发模式）」再接入）；
-  仍不生效则完全退出 uTools 后重启再试。该约束已补入 `CLAUDE.md`，防止再次误判。
-- **Status**: **Needs Action → 待用户执行后复验**
-  - 前置条件就绪：Vite dev server 运行中（`localhost:5173` HTTP 200）。
-  - 复验步骤见 `tasks.md` 的 5.2 / 5.3 / 5.4。
-  - 复验通过后由 AI 承接：回写 OPEN-001 结论 → 执行 Task 6.2（创建 PR）。
+- **处置（已被第 2 轮修正，见下）**: 在 uTools 开发者工具中对本项目重新「**接入开发**」（或先
+  「卸载（开发模式）」再接入）。
+- **Status**: **Superseded by 第 2 轮结论** —— 本条的「根因」表述不准确，正确结论见下一个 Issue。
+
+---
+
+## Issue: 第 2 轮复验仍未生效 → 根因修正为「uTools 需完全重启」，环境已重置
+
+- **Task**: 5.2、5.3、5.4（第 2 轮）
+- **现象**: 用户复验后仍未匹配到「单词详解」。
+- **根因修正**: 第 1 轮把「必须重新『接入开发』」写成了结论，**该表述不准确**。本轮证据显示：
+  uTools **不把开发插件的 `features` 持久化到数据库**，只保存 `plugin.json` 的**路径**
+  （`developer/fff29a109556969ec30c2459cb7aef48/ztwpfbsl`），指令列表在**启动时**从该文件现读。
+  故正确结论是：**完全退出 uTools 并重启即可让新 `plugin.json` 生效**；「接入开发」只在首次
+  添加项目或路径变更时才需要。
+- **证据链（本轮新增）**:
+  1. uTools 全量数据中，`单词详解`、`explain-word` 以及**旧指令的 label**（`英语单词详解`、
+     `查词历史`）**全部零命中**。作为对照，商店版插件均有 `//feature/<pluginId>/<code>` 记录
+     （如 `//feature/a2478731/...`、`//feature/zzllwcjx/codeMode__startCase`），而本插件
+     `ztwpfbsl` **一条都没有** → 开发插件的 feature 表不落库，只能运行时构建。
+  2. 唯一含旧 label 的载体是 `%APPDATA%\uTools\plugins\e42dee628bf745e1ed1fce04f98951b1.asar`
+     ——本插件**曾经的商店打包副本**，内嵌 `plugin.json` 仅含旧 `explain` 功能。该 hash 在
+     uTools 数据库中 **0 命中**（非活动安装），只是下载缓存 → 已排除「商店版重复安装」干扰。
+  3. 本轮实际执行并观察到：结束全部 `uTools.exe` → 重新启动 → uTools **开发者工具本项目详情页的
+     「匹配」标签**已正确显示新指令：`特定文本` → `单词详解`；`文本匹配 /^[a-zA-Z]+$/`；
+     `最少字符数 1`；`最多字符数 64`。即 uTools 已重新解析 `public/plugin.json`。
+- **处置**:
+  - `CLAUDE.md` 的操作说明已按上述事实**改正**：原「必须重新『接入开发』」→「完全退出 uTools 后
+    重启即生效，`npm run dev` 与指令注册无关」；并补充「开发者工具『匹配』页可作为解析验证手段」
+    与 uTools 热键 `Alt+Space`。
+  - 环境已重置：Vite dev server 已重启（`localhost:5173` HTTP 200）；uTools 已完全退出并重新启动。
+- **Status**: **Needs Verification → 待用户复验**
+  - 复验方式：`Alt+Space` 呼出 uTools → 输入或粘贴单个英文单词（如 `ephemeral`）→
+    候补列表应出现「单词详解」。
+  - 若仍不出现，下一步才是重新「接入开发」（或先「卸载（开发模式）」再接入）。
+  - 通过后由 AI 承接：回写 OPEN-001 结论 → 执行 Task 6.2（创建 PR）。
 
 ---
 
