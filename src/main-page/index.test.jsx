@@ -48,7 +48,11 @@ function setupWindowUtools () {
   globalThis.window = {
     ...globalThis.window,
     utools: {
-      allAiModels: vi.fn().mockResolvedValue([]),
+      // 同步 thenable：让「进入设置页 → 加载模型列表」在 act 内完成，避免逃逸的微任务更新
+      allAiModels: vi.fn(() => {
+        const models = []
+        return { then: (resolve) => { resolve(models); return { catch: () => {} } } }
+      }),
       onPluginEnter: vi.fn(),
       onPluginOut: vi.fn()
     }
@@ -150,6 +154,43 @@ describe('MainPage 主界面', () => {
     fireEvent.change(select, { target: { value: '' } })
 
     expect(setPreferredModel).toHaveBeenCalledWith('')
+  })
+})
+
+describe('MainPage 启动开销', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setupUseWordQuery()
+    setupWindowUtools()
+    getPreferredModel.mockReturnValue(null)
+  })
+
+  it('主界面挂载时不请求 AI 模型列表（延迟到设置页）', () => {
+    render(<MainPage />)
+
+    expect(window.utools.allAiModels).not.toHaveBeenCalled()
+  })
+
+  it('主界面挂载时不读取 flomo 标签（延迟到设置页）', () => {
+    render(<MainPage />)
+
+    expect(getFlomoTags).not.toHaveBeenCalled()
+  })
+
+  it('进入设置页时才请求 AI 模型列表', () => {
+    const { container } = render(<MainPage />)
+    fireEvent.click(container.querySelector('.gear-btn'))
+
+    expect(window.utools.allAiModels).toHaveBeenCalledTimes(1)
+  })
+
+  it('进入设置页时才读取 flomo 标签', () => {
+    const { container } = render(<MainPage />)
+    expect(getFlomoTags).not.toHaveBeenCalled()
+
+    fireEvent.click(container.querySelector('.gear-btn'))
+
+    expect(getFlomoTags).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -355,5 +396,78 @@ describe('MainPage 历史面板', () => {
     fireEvent.click(screen.getByText('返回'))
 
     expect(screen.getByPlaceholderText('输入英文单词...')).not.toBeNull()
+  })
+})
+
+describe('MainPage 匹配指令进入', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setupWindowUtools()
+    getPreferredModel.mockReturnValue(null)
+  })
+
+  const overAction = (payload) => ({ code: 'wordMatch', type: 'over', payload })
+
+  it('匹配指令进入 → 输入框预填该单词并自动发起查询', () => {
+    const query = vi.fn()
+    setupUseWordQuery({ query })
+
+    render(<MainPage enterAction={overAction('ephemeral')} />)
+
+    expect(screen.getByPlaceholderText('输入英文单词...')).toHaveValue('ephemeral')
+    expect(query).toHaveBeenCalledTimes(1)
+    expect(query).toHaveBeenCalledWith('ephemeral', undefined)
+  })
+
+  it('自动查询使用已保存的模型偏好', () => {
+    const query = vi.fn()
+    setupUseWordQuery({ query })
+    getPreferredModel.mockReturnValue('model-x')
+
+    render(<MainPage enterAction={overAction('serendipity')} />)
+
+    expect(query).toHaveBeenCalledWith('serendipity', 'model-x')
+  })
+
+  it('匹配数据为空 → 不发查询', () => {
+    const query = vi.fn()
+    setupUseWordQuery({ query })
+
+    render(<MainPage enterAction={overAction('')} />)
+
+    expect(query).not.toHaveBeenCalled()
+  })
+
+  it('功能指令进入 → 不自动查询且输入框为空', () => {
+    const query = vi.fn()
+    setupUseWordQuery({ query })
+
+    render(<MainPage enterAction={{ code: 'explain', type: 'text', payload: '查词' }} />)
+
+    expect(query).not.toHaveBeenCalled()
+    expect(screen.getByPlaceholderText('输入英文单词...')).toHaveValue('')
+  })
+
+  it('重复进入 → 以新的匹配数据再次查询', () => {
+    const query = vi.fn()
+    setupUseWordQuery({ query })
+
+    const { rerender } = render(<MainPage enterAction={overAction('alpha')} />)
+    expect(query).toHaveBeenLastCalledWith('alpha', undefined)
+
+    rerender(<MainPage enterAction={overAction('beta')} />)
+
+    expect(query).toHaveBeenLastCalledWith('beta', undefined)
+    expect(query).toHaveBeenCalledTimes(2)
+  })
+
+  it('自动查询只读取一次模型偏好（避免重复的同步存储访问）', () => {
+    const query = vi.fn()
+    setupUseWordQuery({ query })
+
+    render(<MainPage enterAction={overAction('ephemeral')} />)
+
+    expect(query).toHaveBeenCalledTimes(1)
+    expect(getPreferredModel).toHaveBeenCalledTimes(1)
   })
 })

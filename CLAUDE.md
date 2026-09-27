@@ -8,11 +8,83 @@ React + Vite 工程，在 uTools 平台中运行的桌面插件。用户输入�
 ## 常用命令
 
 ```bash
-npm run dev      # 启动开发服务器 (localhost:5173)
+npm run dev      # 启动开发服务器 (localhost:5173) — 只提供前端代码，不注册指令
 npm run build    # 生产构建到 dist/
 npm run deploy   # 构建 + 复制产物到 public/（uTools 应用商店打包用）
-npm test         # 运行 141 个测试 (vitest)
+npm test         # 运行 173 个测试 (vitest)
 ```
+
+> **⚠️ 改了 `public/plugin.json` 后：在 uTools 开发者工具中「卸载（开发模式）」再重新安装**
+>
+> 已确认的两条事实（均实测）：
+>
+> 1. **`npm run dev` 与指令注册无关** —— 它只热更新**前端代码**，不注册、也不刷新指令。
+>    重启它永远无法让新指令出现（这是最容易走的一段弯路）。
+> 2. **让新 `plugin.json` 生效的正确操作**：在 uTools 开发者工具中对本项目
+>    「**卸载（开发模式）**」→ 再「**安装（开发模式）**」。**不需要重启 uTools**。
+>    呼出热键为 `Alt+Space`。
+>
+> **⚠️ AI 侧约定（用户明确要求）**：**不要结束 uTools 进程**。uTools 常驻运行、无需手动关闭；
+>    AI 修改配置后只需重启本地开发服务（`npm run dev`），uTools 侧的卸载 / 重装由用户自行执行。
+>
+> **自查手段**：uTools 开发者工具的本项目详情页有「功能 / 匹配」两个标签，「匹配」页会列出解析
+> 到的匹配指令（类型、正则、最少 / 最多字符数）。**页面上能看到 = `plugin.json` 已被正确解析**，
+> 此时可排除配置语法问题。
+>
+> **⚠️ 但「看得到」≠「会生效」**（2026-09-27 实测）：曾出现「开发者工具『匹配』页已正确显示指令、
+> 主搜索框却匹配不到」的情形（当时只重启了 uTools 进程）。**主搜索框的指令索引只在
+> 「安装（开发模式）」时重建**，故改了 `plugin.json` 后 MUST 执行
+> 「卸载（开发模式）」→「安装（开发模式）」。该页只能用来排除语法问题，不能用来判断是否生效。
+>
+> **不要用「磁盘检索」判断指令是否注册**：uTools **不把开发插件的 `features` 持久化到数据库**，
+> 只保存 `plugin.json` 的**路径**。商店版插件有 `//feature/<pluginId>/<code>` 记录，本插件
+> `ztwpfbsl` 一条都没有（连旧指令的 label 也搜不到）——那是**常态，不构成未注册的证据**。
+>
+> **匹配指令的配置形态**（对照官方示例 *plugin.json 配置完整示例*）：
+>
+> - `regex` 指令字段为 `type` / `label`（必须）/ `match`（**含前后斜杠的字符串**）/ `minLength` /
+>   `maxLength`；`over` 指令字段为 `type` / `label` / `exclude`（可选）/ `minLength` / `maxLength`。
+> - 官方示例的 feature `code` **自带连字符**（`test-regex`、`test-over`、`test-files`），故
+>   `code` 中含 `-` 无害；`cmds` 支持**字符串与对象混排**（生产插件如
+>   `UtilityTools.jsonOper` 即 `["JSON处理", {regex 对象}]`）。
+> - **实测结论（2026-09-27，经 5 轮真机复验）**：`wordMatch` 下曾并行挂 `regex`（label
+>   `单词详解`）与 `over`（label `单词详解（复制即查）`）作 A/B 探针。结论：**`regex` 型在本机
+>   从未生效，`over` 型是唯一生效路径**。
+>   判定依据是**控制变量实验**：删除 `over` 后候补即消失（第 4 ↔ 5 轮唯一变量为 `over` 的存删，
+>   其余配置逐字一致）。
+>   ⚠️ **不要用「候补 label 与某条指令的 label 一致」来判定生效指令** —— uTools 对同一 feature
+>   的候补显示 label **并非取被命中指令自身的 label**（第 4 轮据此误判过一轮）。
+> - **当前形态**：`cmds` = `["单词详解", { "type": "over", "label": "单词详解",
+>   "exclude": "/[^a-zA-Z]|^(explain|word|vocabulary)$/i", "minLength": 2, "maxLength": 100 }]`。
+>   `exclude` 承担两件事：①「仅单个英文单词」的语义（`[^a-zA-Z]`，等价于原 `^[a-zA-Z]+$` 且更
+>   严格——空格亦被排除）；②**排除与功能指令重名的关键词**（`^(explain|word|vocabulary)$`），
+>   否则输入 `word` 会同时命中功能指令与匹配指令。
+> - **⚠️ 关键词重叠约束（2026-09-27 真机实测 + 解包取证）**：uTools **不合并**同一插件的功能指令
+>   与匹配指令命中，二者各占一格；且功能指令（`base`）的命中条件是**「输入是关键词的子串」**
+>   （`index.js` 的 `F()` 用 `keyword.indexOf(input) >= 0`，故 `ephemeral` 不命中 `explain`）。
+>   因此**新增任何纯 ASCII 关键词时 MUST 同步把它加入 `exclude` 的锚定组**；`src/plugin-manifest.test.js`
+>   会遍历 `cmds` 断言这一点，漏改即测试失败。
+>   已知残留：当输入本身是关键词的**子串**时（如 `in` / `or` / `ab` / `la`）仍会出现两条目；根治需
+>   枚举全部子串，但会连带排除 `in` / `or` 等**真实英文单词**，代价大于收益，故不采纳。
+> - **⚠️ 代码侧联动（易漏）**：`onPluginEnter` 的 `action.type` **随匹配类型变化**（`over` 型即
+>   `'over'`，`regex` 型即 `'regex'`）。**改 `plugin.json` 的匹配类型时 MUST 同步
+>   `src/main-page/index.jsx` 的守卫**（当前为 `enterAction.type !== 'over'`），否则会出现
+>   「候补能出现、但进入后不自动查询」的隐性故障。
+>
+> **🚫 `regex` 型不可用于「任意匹配」（2026-09-27 解包 `app.asar` 确证，本插件场景的定论）**：
+> 构建索引时 `regex` 走 `H(match, cmd)` **双参数**路径，会做「是否属于任意匹配」的启发式判定，
+> 判定为真则 `H` 返回 `null` → 该指令**永不入索引**（表现为「开发者工具『匹配』页能看到、
+> 主搜索框永远搜不到」）；`over` 走 `H(exclude)` **单参数**路径，**无任何判定门槛**、无条件入索引。
+> 判定方式为**随机样本探测**：凡能命中「随机小写字母串」（`minLength<2` 时 1 个；`<3` 时 2 个；
+> 或 3~16 长度区间内连续 2 次命中）或「随机汉字串」者一律被拒。
+> 实测 `/^[a-zA-Z]+$/`、`/[a-zA-Z]+/`、`/^[a-zA-Z]{3,}$/` 均 **500/500** 被拒——
+> **「匹配任意字母」与判定规则直接冲突，调 `match` / `minLength` / `maxLength` 均无法绕开**。
+> 故本插件 MUST 继续使用 `over` + `exclude`，**不得回退到 `regex`**。
+>
+> 另注：`public/` 是 uTools 实际加载的目录，`dist/` 是 `vite build` 产物（构建时会把 `public/`
+> 的内容一并拷入）。**`plugin.json` 的唯一源是 `public/plugin.json`**，不要改 `dist/` 下的副本。
+> `%APPDATA%\uTools\plugins\*.asar` 中可能残留本插件曾经的商店打包副本（内嵌**旧版**
+> `plugin.json`），那是下载缓存而非活动安装，排查时可忽略。
 
 ## 架构概述
 
@@ -21,6 +93,7 @@ src/
 ├── main.jsx                    # React 入口
 ├── main.css                    # 全局样式
 ├── App.jsx                     # 根组件 — utools 生命周期 (onPluginEnter/Out)
+├── App.test.jsx                # 根组件测试 — 进入动作 (action) 透传
 ├── main-page/
 │   ├── index.jsx               # 主界面 + 设置面板 + 查词历史视图切换 (编排组件)
 │   └── index.css               # 布局、按钮、结果区、暗色模式
@@ -69,6 +142,8 @@ public/preload/
 - **MCP 工具**：通过 `utools.registerTool('explain_word', handler)` 在 preload 中注册，handler 流式调用 AI + 每 2s 线性进度上报（15s 上限）
 - **AI 调用**：流式模式 (`utools.ai(option, streamCallback)`)，边接收边渲染
 - **存储**：`utools.dbStorage` (key-value，模型偏好 `preferredModel` + 保存查词历史开关 `saveQueryHistory` + flomo 端点 `flomoApiEndpoint` + flomo 标签 `flomoTags`) + `utools.db` (文档型，查词历史)
+  - **⚠️ 性能红线**：`utools.dbStorage.getItem()` 是**同步 IPC**（`ipcRenderer.sendSync` 配对），读取期间**渲染进程完全阻塞**。契约：① 禁止在 render 期 / mount 期**批量**读取；② 同一 key 每次挂载**只读一次**（用 ref 复用，勿在多处重复读）；③ 仅子页面使用的数据 MUST **延迟到进入该页面**时再加载 —— 当前 `allAiModels()`（内含**全库前缀扫描** + 远程 `/model/list` 请求）与 `flomoTags` 均只在设置页使用，因此已下放到设置页加载
+  - **⚠️ 匹配指令路径的敏感性**：经匹配指令（`over` 型）进入时，上述启动期开销全部落在「进入之后」的感知窗口内，而手动进入再点查询则无感（开销被算进「插件打开」阶段）。因此**启动路径上的任何额外 IO/请求都会被用户直接感知为「进去后卡住」**
 - **渲染**：自定义 markdown 解析器，支持 3 层嵌套列表
 
 ## 分支规则（红线）

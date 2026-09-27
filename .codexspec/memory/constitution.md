@@ -1,6 +1,46 @@
 <!--
 SYNC IMPACT REPORT
 ==================
+Version: 1.1.2 → 1.1.3
+Bump Rationale: PATCH — 非语义修正。原则 2 与原则 6 中的测试计数从 154 更正为实测值 173（新增 `src/plugin-manifest.test.js` 的 19 条配置契约测试），并同步 Template Consistency Check 中对 CLAUDE.md / README.md 的一致性判断。无原则增删或重定义。
+
+Changes:
+- Modified: 原则 2「行为驱动测试」——测试基准 154 → 173
+- Modified: 原则 6「文档与代码同步」——文档测试计数引用 154 → 173
+- Modified: 顶部版本号 1.1.2 → 1.1.3；最后修订 2026-09-27
+
+Template Consistency Check:
+- .codexspec/templates/docs/tasks-template-simple.md: ✅ aligned（无计数引用）
+- .codexspec/templates/docs/tasks-template-detailed.md: ✅ aligned（无计数引用）
+- CLAUDE.md: ✅ aligned（第 14 行「运行 173 个测试」与实际一致）
+- README.md: ✅ aligned（「Vitest 4 + Testing Library (173 个测试)」与实际一致）
+
+Deferred TODOs:
+- TODO(USER): 是否将「`utools.dbStorage` 读取为同步 IPC，启动路径 MUST NOT 批量读取」写入「性能标准」章节？
+  当前该约束仅记于 CLAUDE.md 与 CONTEXT.md，宪法层面未升级（如需写入属 MINOR 变更，须另行经 PR 批准）。
+
+---
+
+历史记录 (Historical)
+Version: 1.1.0 → 1.1.1
+Bump Rationale: PATCH — 非语义修正。原则 6 中的测试计数从陈旧的 135 更正为实测值 141，使原则 6「文档中的测试计数 MUST 与实际一致」这一自指要求不再自相矛盾（原则 2 已记为 141）。无原则增删或重定义。
+
+Changes:
+- Modified: 原则 6「文档与代码同步」——测试计数 135 → 141（对齐原则 2 与实测 `npm test` = 141 passed）
+- Modified: 顶部版本号 1.1.0 → 1.1.1；最后修订日期 2026-07-07 → 2026-09-27
+
+Template Consistency Check:
+- .codexspec/templates/docs/tasks-template-simple.md: ✅ aligned（无计数引用）
+- .codexspec/templates/docs/tasks-template-detailed.md: ✅ aligned（无计数引用）
+- CLAUDE.md: ✅ aligned（第 14 行「运行 141 个测试」与实际一致）
+- README.md: ✅ aligned（「Vitest 4 + Testing Library (141 个测试)」与实际一致）
+- 上一版报告中关于「.codexspec/ 被 .gitignore 的 `.*/` 规则忽略」的 TODO 已过期：.gitignore 现已显式放行 `.codexspec/` 与 `.codexspec/**`，宪法可随仓库版本化。
+
+Deferred TODOs:
+- TODO(USER): 移除上一版遗留的「是否将 .codexspec/ 放行」TODO——该问题已由 .gitignore 显式覆盖规则解决。
+
+---
+历史记录 (Historical)
 Version: 1.0.0 → 1.1.0
 Bump Rationale: MINOR — 新增原则 8「强制严格 TDD（测试驱动开发）」，将测试先行上升为不可妥协的
 开发必经流程：所有生产代码 MUST 先 RED（编写失败测试）后 GREEN（最小实现）。同步强化原则 2 交叉引用。
@@ -65,7 +105,7 @@ Changes:
   （`utools.db` / `dbStorage`）的集成测试。
 - 函数签名变更时 MUST 全局搜索所有调用点，并核对 `expect(mockFn).toHaveBeenCalledWith(...)`
   断言覆盖全部参数。
-- 测试基准：当前 **141** 个测试；新增模块时测试数随之增长并在文档同步。
+- 测试基准：当前 **173** 个测试；新增模块时测试数随之增长并在文档同步。
 - 测试顺序遵循原则 8（强制严格 TDD）：MUST 先编写失败测试（RED），再写最小实现（GREEN），
   最后在测试保护下重构（REFACTOR）；MUST NOT 先写实现再补测试。
 - 理由：历史踩坑——`use-word-query` 漏传 `db` 参数，因被测函数被 `vi.fn()` mock 而未执行真实逻辑，
@@ -102,7 +142,7 @@ Changes:
 
 - 新增 `src/<module>/` 或新增测试后，MUST 同步更新 `CLAUDE.md`（架构图树形结构、依赖方向、
   存储说明）与 `README.md`（项目结构树、测试计数）。
-- 文档中的测试计数 MUST 与实际 `npm test` 通过数一致（当前 **135**），MUST NOT 出现数字脱节。
+- 文档中的测试计数 MUST 与实际 `npm test` 通过数一致（当前 **173**），MUST NOT 出现数字脱节。
 - 版本发布说明 MUST 记录于 `releases/vX.Y.Z.md`，插件介绍于 `releases/plugin-intro.md`。
 - 涉及构建流程变更时 MUST 同步 `package.json` 与 `.gitignore` 的构建产物路径。
 - 理由：历史上 CLAUDE.md/README.md 曾滞后（「58 个测试」实为 86），同步规则避免误导。
@@ -152,8 +192,11 @@ Changes:
 - **命名**：目录 `kebab-case`；函数 / 变量 `camelCase`；组件 `PascalCase`
 - **模块形态**：`src/<module>/index.js` + `index.test.js`；组件模块可附 `index.css`
 - **CSS**：按组件独立编写；暗色模式统一用 `@media (prefers-color-scheme: dark)` 覆盖
-- **构建产物**：因 Windows `public/` 文件占用风险，`vite.config.js` MUST 设 `build.assetsDir: ''`
-  让 JS/CSS 直出 `dist/` 根目录，MUST NOT 输出到 assets 子目录
+- **构建产物**：构建输出 MUST 留在 `dist/`（Vite 默认布局，JS/CSS 位于 `dist/assets/`），由 `npm run deploy`
+  复制到 `public/`；MUST NOT 让构建直接写入 `public/`（Windows 下 `public/` 存在文件占用风险）。
+  构建产物 MUST NOT 入 git（`.gitignore` 已忽略 `dist/`、`public/assets/`、`public/index-*.js|css`、`public/index.html`）。
+  注：2026-09-27 核查确认 `vite.config.js` **从未**设置过 `build.assetsDir`（全历史检索无命中），
+  原条款所述方案与实际实现不符，故按实际实现重写。
 - **文件修改**：精准修改、匹配现有风格；修改含 Unicode box-drawing 字符（树形图）的 `CLAUDE.md` 时，
   MUST 用脚本按行号操作而非文本匹配
 
@@ -227,4 +270,4 @@ Changes:
 - **冲突处理**：用户请求与宪法冲突时，MUST 停止并说明违反的原则，提出合规替代方案，须用户显式确认方可覆盖。
 - **所有 PR / 审查 MUST 验证合规**。
 
-**版本**: 1.1.0 | **批准日期**: 2026-07-06 | **最后修订**: 2026-07-07
+**版本**: 1.1.3 | **批准日期**: 2026-07-06 | **最后修订**: 2026-09-27

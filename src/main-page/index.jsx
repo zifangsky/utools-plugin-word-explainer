@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useWordQuery } from '../use-word-query/index.js'
 import { MarkdownView } from '../markdown-view/index.jsx'
 import { HistoryView } from '../history-view/index.jsx'
@@ -39,7 +39,7 @@ function BackIcon () {
 }
 
 // 尝试导入 HistoryView，如果失败会在这里抛出
-export default function MainPage () {
+export default function MainPage ({ enterAction }) {
   const [word, setWord] = useState('')
   const { loading, error, result, query } = useWordQuery()
   const [currentView, setCurrentView] = useState(VIEW_MAIN)
@@ -47,19 +47,37 @@ export default function MainPage () {
   const [selectedModel, setSelectedModel] = useState('')
   const [saveEnabled, setSaveEnabled] = useState(() => getSaveQueryHistory())
   const [endpoint, setEndpoint] = useState(() => getFlomoApiEndpoint())
-  const [tags, setTags] = useState(() => getFlomoTags())
+  const [tags, setTags] = useState('')
   const { syncStatus, syncMessage, handleSync } = useFlomoSync(word, result)
+
+  // 模型偏好只读一次：dbStorage 读取是同步 IPC，主界面挂载阶段需避免重复阻塞
+  const preferredModelRef = useRef(null)
 
   useEffect(() => {
     const preferred = getPreferredModel()
+    preferredModelRef.current = preferred
     if (preferred) setSelectedModel(preferred)
+  }, [])
+
+  // 模型列表与 flomo 标签仅设置页使用，延迟到进入设置页时再加载
+  useEffect(() => {
+    if (currentView !== VIEW_SETTINGS) return
+
+    setTags(getFlomoTags())
 
     if (window.utools && window.utools.allAiModels) {
       window.utools.allAiModels().then(list => {
         setModels(list || [])
       }).catch(() => {})
     }
-  }, [])
+  }, [currentView])
+
+  // 经匹配指令（over 型）进入时，预填该单词并自动查询
+  useEffect(() => {
+    if (!enterAction || enterAction.type !== 'over' || !enterAction.payload) return
+    setWord(enterAction.payload)
+    query(enterAction.payload, preferredModelRef.current || undefined)
+  }, [enterAction])
 
   const handleQuery = () => {
     const trimmed = word.trim()
