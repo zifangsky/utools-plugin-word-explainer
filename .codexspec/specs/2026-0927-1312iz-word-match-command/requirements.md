@@ -8,7 +8,7 @@ Language: zh-CN（与 .codexspec/config.yml 的 language.output 一致）
 
 **Feature ID**: `2026-0927-1312iz`
 **Status**: Confirmed
-**Last Confirmed**: 2026-09-27 13:16
+**Last Confirmed**: 2026-09-27 13:16（后续 CON-002 / CON-003 的变更见文末「变更记录」）
 
 ## Authority Rules
 
@@ -117,7 +117,7 @@ Language: zh-CN（与 .codexspec/config.yml 的 language.output 一致）
 ### DEC-003: 指令名称（`label`）为「单词详解」
 
 - **Status**: confirmed
-- **Decision**: regex 指令的 `label` 取「单词详解」。
+- **Decision**: 匹配指令的 `label` 取「单词详解」。（原始表述为「regex 指令」；2026-09-27 CON-002 将类型改为 `over` 后 `label` 取值不变。）
 - **Alternatives Rejected**: 「查词」（最简短，但与现有功能指令同名，易混淆）；「英语单词详解」（信息完整，但与插件名重复且过长）。
 - **Reason**: 与插件标题「英语单词详解」呼应，同时与既有功能指令「查词」形成区分，便于两个条目并存时辨认。
 - **User Evidence**: 设计确认题「匹配指令在 uTools 搜索框里显示的指令名称（label）用哪个？」→ 用户选择「单词详解」
@@ -125,7 +125,7 @@ Language: zh-CN（与 .codexspec/config.yml 的 language.output 一致）
 ### DEC-004: 首版不处理与英文功能指令的重复命中
 
 - **Status**: confirmed
-- **Decision**: 正则首版采用最简形式 `/^[a-zA-Z]+$/`，不为排除 `explain` / `word` / `vocabulary` 而写负向断言。
+- **Decision**: 匹配指令首版不为排除 `explain` / `word` / `vocabulary` 而写负向断言。（原始表述含「正则首版采用最简形式 `/^[a-zA-Z]+$/`」；该字面量已随 CON-002 变更为 `over` + `exclude: "/[^a-zA-Z]/"` 而失效，本决策本身继续有效。）
 - **Alternatives Rejected**: 用负向断言排除这三个词（彻底避免重复，但正则可读性下降）；删除这三个英文功能指令（根治重复，但破坏既有用法）。
 - **Reason**: uTools 很可能已对同一插件的命中做合并；且重复条目不影响功能。待真实 uTools 环境实测后再决定是否优化，避免为未证实的问题增加复杂度。
 - **User Evidence**: 设计确认题「现有功能指令含 explain / word / vocabulary，可能产生重复条目，是否处理？」→ 用户选择「先不处理，实测后再定（推荐）」
@@ -135,7 +135,7 @@ Language: zh-CN（与 .codexspec/config.yml 的 language.output 一致）
 ### OUT-001: 其他匹配类型
 
 - **Status**: confirmed
-- **Statement**: 不实现 `over` / `img` / `files` / `window` 四类匹配指令。
+- **Statement**: 不实现 `img` / `files` / `window` 三类匹配指令。`over` 原列于此，但 2026-09-27 因 `regex` 型真机不可用而成为本特性的实现方案（见 CON-002），已移出「不实现」范围。
 - **Reason**: 均超出本次「复制单词即查词」的诉求范围。
 - **User Evidence**: 用户仅要求「匹配指令」能力用于单词查词场景。
 
@@ -172,14 +172,16 @@ Language: zh-CN（与 .codexspec/config.yml 的 language.output 一致）
 ### OPEN-002: 匹配范围是否含连字符 / 撇号词汇
 
 - **Status**: open
-- **Why It Matters**: 决定正则采用 `/^[a-zA-Z]+$/` 还是放宽（如 `well-known`、`don't`）。
+- **Why It Matters**: 决定匹配范围是否放宽到连字符 / 撇号词汇（如 `well-known`、`don't`）——当前 `exclude: "/[^a-zA-Z]/"` 会将这些词整体排除。
 - **Owner**: User
 - **阻塞性**: 非阻塞——首版按 CON-001 取纯字母，如需放宽再单独迭代。
 - **AI 假设（未确认）**: 依据宪法原则 3「单个英文单词」，首版取纯 `[a-zA-Z]`。用户在阶段摘要确认中未对该假设单独表态，故本条保持 `open`，仅 CON-001 为绑定约束。
 
 ## Superseded Entries
 
-（无）
+| 被替换条目 | 替代条目 | 替换时间 |
+|-----------|---------|---------|
+| `CON-002-SUPERSEDED`（匹配类型 MUST 为 `regex`） | `CON-002`（MUST 为 `over` + 严格 `exclude`） | 2026-09-27 14:36 |
 
 ## Confirmation Log
 
@@ -265,3 +267,24 @@ Language: zh-CN（与 .codexspec/config.yml 的 language.output 一致）
      上界已相应调整为 101 个连续字母。
 - **对 REQ-001 / REQ-002 / REQ-003 的影响**: 触发条件（仅单字母序列）不变；**进入动作的 `type`
   取值由 `regex` 变为 `over`**（REQ-002 已同步）。REQ-003 的自动查询逻辑不变。
+
+
+### 2026-09-27 15:05 复验第 6 轮：**端到端核验通过**（Task 5.3）+ 启动路径性能修复
+
+- **触发**: 用户第 6 轮真机复验确认 `Alt+Space` → 输入 `ephemeral` → 候补出现「单词详解」→
+  **选中后输入框预填且详解自动开始生成**。REQ-003 与 REQ-004 的端到端行为在真机成立。
+- **新增问题（用户报告）**: 经匹配指令进入后「要等很久才真正执行查询并在屏幕中展示」，
+  而手动进入再点查询无此观感。
+- **根因（解包 `app.asar` 取证，非推测）**:
+  1. `utools.dbStorage.getItem()` 为**同步 IPC**（handler 用 `event.returnValue` 回填，配对
+     `ipcRenderer.sendSync`），读取期间渲染进程**完全阻塞**；
+  2. 主界面挂载期连续发起 6 次同步存储读取，其中 2 次为同一 key 的重复读取；
+  3. `utools.allAiModels()` 在挂载期被调用，其内部为「全库前缀扫描 + 远程 `/model/list` 请求」，
+     而结果仅设置页的模型下拉框使用。
+- **差异成因**: 手动路径把上述开销算在「插件打开」阶段，用户无感；匹配指令路径把同样开销压在
+  「进入之后」的感知窗口内，故只有该路径显得卡顿。本质是**既有实现缺陷被新入口放大**，非本特性引入。
+- **已执行（严格 TDD）**: `allAiModels()` 与 `getFlomoTags()` 下放到进入设置页时加载；模型偏好改用
+  `ref` 缓存，每次挂载只读一次。新增 5 条测试，先跑出 `4 failed | 31 passed` 再修实现至全绿。
+- **旁证**: 全量测试的 React `act` 警告由 27 条降至 1 条（残留 1 条属 `HistoryView`，与本次无关）。
+- **门禁**: `npm test` **154 passed**、`npx standard` 退出码 0、`npm run build` 成功。
+- **仍未核验**: Task 5.2 的负例集合与 101 字母上界；Task 5.4 的 OPEN-001（输入 `word` 是否同时出现两条目）。

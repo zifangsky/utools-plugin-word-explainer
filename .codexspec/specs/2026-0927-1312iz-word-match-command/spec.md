@@ -149,7 +149,7 @@ uTools 提供「匹配指令」机制（`plugin.json` → `features[].cmds[]` �
 
 ## Non-Goals
 
-- 不实现 `over` / `img` / `files` / `window` 等其他匹配类型（OUT-001）
+- 不实现 `img` / `files` / `window` 等其他匹配类型；`over` 已是本特性的实现方案（见 CON-002），不在排除之列（OUT-001）
 - 不实现 uTools 超级面板、全局快捷键等触发入口（OUT-002）
 - 不接入外部词典 API 或本地词库（OUT-003）
 - 不重构、不删除、不改名现有功能指令（OUT-004）
@@ -174,8 +174,8 @@ uTools 提供「匹配指令」机制（`plugin.json` → `features[].cmds[]` �
 ## Constraints
 
 - **CON-001** 仅匹配单个纯英文单词（`[a-zA-Z]`），MUST NOT 匹配短语、句子、中文
-- **CON-002** 匹配类型 MUST 为 `over`，MUST NOT 使用 `over`
-- **CON-003** 配置载体为 `public/plugin.json`；`match` 为字符串形式的正则（如 `"/^[a-zA-Z]+$/"`）
+- **CON-002** 匹配类型 MUST 为 `over`，MUST NOT 使用 `regex`（`regex` 型在本项目真机环境从未生效，见 requirements.md 的 CON-002-SUPERSEDED）
+- **CON-003** 配置载体为 `public/plugin.json`；`over` 型的 `exclude` 为字符串形式的正则（如 `"/[^a-zA-Z]/"`，语义为「排除任何含非字母字符的输入」）
 - **CON-004** 严格 TDD：测试先于实现；`npm test` 全绿 + `npx standard` 无错
 - **CON-005** 不新增依赖、不改变既有模块依赖方向
 - **宪法原则 3** 单词解释内容 MUST 由 `utools.ai()` 生成，不接外部词典
@@ -183,9 +183,9 @@ uTools 提供「匹配指令」机制（`plugin.json` → `features[].cmds[]` �
 
 ## Assumptions
 
-- **A-001**：正则使用全串锚定（`^…$`），因此 uTools 回传的 `payload` 即用户输入的全部文本，无需再做截取或规整。
+- **A-001**：`exclude: "/[^a-zA-Z]/"` 会排除任何含非字母字符（含空格）的输入，因此 uTools 回传的 `payload` 即用户输入的全部文本，无需再做截取或规整。
 - **A-002**：自动查询的模型参数与手动点击「查询」完全一致——取当前已保存的模型偏好；无偏好时传 `undefined`，由既有 `useWordQuery` / `ai-call` 逻辑交给平台默认模型处理。
-- **A-003（spec 派生，非用户确认）**：REQ-001 中的长度上界 64 字符由本规范推导，requirements.md 未确认具体数值。依据是 CON-001 要求仅匹配「单个单词」，而 DEC-004 确认的正则 `/^[a-zA-Z]+$/` 本身不含长度约束，故需由 `maxLength` 另行界定；64 大于最长英文单词（`pneumonoultramicroscopicsilicovolcanoconiosis`，45 个字母），对任何真实英文单词不改变可观察行为。DEC-004 确认的正则字面量未被修改。
+- **A-003（最终取值由用户指示确定，2026-09-27）**：REQ-001 的长度区间 2~100 由用户指示确定，取代原 spec 派生的 64 上界。下界 2 使单字母单词（`a`、`I`）不命中；上界 100 大于最长英文单词（`pneumonoultramicroscopicsilicovolcanoconiosis`，45 个字母），对任何真实英文单词不改变可观察行为。
 
 ## Open Questions
 

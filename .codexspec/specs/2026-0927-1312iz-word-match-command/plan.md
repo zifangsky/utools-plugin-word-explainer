@@ -174,9 +174,15 @@ use-word-query ──► prompt-template ──► ai-call（utools.ai 流式）
 
 要点：
 
-- `match` 为字符串形式正则（带斜杠），本式无需转义反斜杠；`^…$` 全串锚定保证 uTools 回传的 `payload` 即完整输入（Assumption A-001）。
-- `maxLength: 64` 为 spec 派生边界（Assumption A-003），DEC-004 确认的正则字面量未被修改。
+- `exclude` 为字符串形式正则（带斜杠），本式无需转义反斜杠；其语义为「输入含任何非字母字符即整条排除」，故 uTools 回传的 `payload` 必然为纯字母串（Assumption A-001）。
+- 长度区间 `2 ~ 100` 的最终取值由用户指示确定（Assumption A-003），取代原 spec 派生的 64 上界。
 - 现有 `explain` feature、`tools` 配置一字不动（DEC-001、OUT-004）。
+
+> **实现后注记（2026-09-27 完成时回填）**：本计划为 2026-09-27 13:20 制定时的快照，实现过程有三处偏离，均已就地说明或记于此：
+>
+> ① 匹配类型由 `regex` 改为 `over` + `exclude`（见上方配置契约与 requirements.md 的 CON-002）；
+> ② 交付时测试总数为 **154 passed**（基线 141 + 本特性 8 + 启动路径性能修复 5）；
+> ③ 上文「现状代码定位」表中的行号对应**实现前**的 `src/` 代码。性能修复（提交 `71df3a8`）改动 `src/main-page/index.jsx` 后行号已位移（例如 `handleQuery` 现位于第 80~85 行，原为 64~68），引用时以实际代码为准。
 
 ## Implementation Phases
 
