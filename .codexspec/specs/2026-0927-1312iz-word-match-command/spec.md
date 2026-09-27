@@ -101,6 +101,29 @@ Sources: NEED-002, CON-005
 - **WHEN** 自动查询产出结果，且已配置 flomo API 端点
 - **THEN** flomo 同步按钮在结果生成后可见，与手动查询后的表现一致
 
+### Requirement: REQ-006 匹配指令不与功能指令关键词重复命中
+
+`over` 匹配指令的 `exclude` MUST 排除 `features[].cmds` 中所有纯 ASCII 字母关键词，使这些关键词的输入**只**命中功能指令，不额外产生一条「单词详解」候选。排除 MUST 为精确锚定且大小写不敏感，MUST NOT 误伤以关键词为前缀的真实单词。
+
+Sources: CON-006, DEC-005, OUT-004
+
+**验证方式**：本条为配置契约，由仓库内自动化测试覆盖（`src/plugin-manifest.test.js`）——遍历 `public/plugin.json` 的全部 `cmds` 字符串项，对纯 ASCII 关键词断言 `exclude` 命中；该测试同时防止后续新增关键词时 `exclude` 漂移，无需真机核验。
+
+#### Scenario: 关键词输入只出现功能指令条目
+
+- **WHEN** 主输入框内容为 `word` / `explain` / `vocabulary`（含大小写变体，如 `Word`、`EXPLAIN`）
+- **THEN** 该输入不命中匹配指令，同一插件在候补中只有一个条目（功能指令）
+
+#### Scenario: 普通单词仍出现匹配指令
+
+- **WHEN** 主输入框内容为普通英文单词（如 `ephemeral`）
+- **THEN** 候选中出现「单词详解」匹配指令，且该插件的功能指令不命中
+
+#### Scenario: 以关键词为前缀的真实单词不受影响
+
+- **WHEN** 主输入框内容为 `words` / `wordy` / `explains`
+- **THEN** 该输入仍命中匹配指令（排除为精确锚定，不误伤更长的单词）
+
 ### Requirement: NFR-001 无新增依赖与依赖方向不变
 
 本改动 MUST NOT 引入任何新的 npm 依赖，MUST NOT 新增或改变 `src/` 模块之间的依赖方向（宪法原则 1 的无环约束），MUST NOT 新增 `src/<module>/` 目录。
@@ -140,6 +163,8 @@ uTools 提供「匹配指令」机制（`plugin.json` → `features[].cmds[]` �
 - `feature.cmds`：`Array<string|object>`，字符串为功能指令，对象为匹配指令
 - 匹配指令对象字段：`type`（必填，取 `regex` / `over` 等）、`label`（必填）、`regex` 型用 `match`、`over` 型用 `exclude`（均为带斜杠与 flag 的字符串；JSON 中反斜杠需双写）、`minLength` / `maxLength`（可选，按字符数）
 - `utools.onPluginEnter(callback)` 回调参数为 `{ code, type, payload, option, from }`；`type` 取 `"text" | "img" | "file" | "regex" | "over" | "window"`，`payload` 为「`feature.cmd.type` 对应匹配的数据」
+- （解包 `app.asar` 实证，2026-09-27）功能指令（`base`）的命中条件是**「输入是关键词的子串」**（`index.js` 的 `F()` 用 `keyword.indexOf(input) >= 0`），故 `ephemeral` 不命中 `explain`、`password` 不命中 `word`
+- （解包 `app.asar` 实证，2026-09-27）`over` 的 `exclude` 转换走**单参数**路径，**不受**「任意匹配正则被忽视」判定的约束；`regex` 的 `match` 走双参数路径会被判定（本项目 `regex` 型因此从未生效）
 
 ## Goals
 
@@ -153,7 +178,7 @@ uTools 提供「匹配指令」机制（`plugin.json` → `features[].cmds[]` �
 - 不实现 uTools 超级面板、全局快捷键等触发入口（OUT-002）
 - 不接入外部词典 API 或本地词库（OUT-003）
 - 不重构、不删除、不改名现有功能指令（OUT-004）
-- 不为「与 `explain` / `word` / `vocabulary` 的重复命中」编写负向断言（DEC-004，待实测）
+- ~~不为「与 `explain` / `word` / `vocabulary` 的重复命中」编写负向断言（DEC-004，待实测）~~ —— **已推翻**：真机实测确认会重复（OPEN-001），改由 REQ-006 + CON-006 + DEC-005 以 `exclude` 处理
 
 ## User Stories
 
@@ -175,21 +200,22 @@ uTools 提供「匹配指令」机制（`plugin.json` → `features[].cmds[]` �
 
 - **CON-001** 仅匹配单个纯英文单词（`[a-zA-Z]`），MUST NOT 匹配短语、句子、中文
 - **CON-002** 匹配类型 MUST 为 `over`，MUST NOT 使用 `regex`（`regex` 型在本项目真机环境从未生效，见 requirements.md 的 CON-002-SUPERSEDED）
-- **CON-003** 配置载体为 `public/plugin.json`；`over` 型的 `exclude` 为字符串形式的正则（如 `"/[^a-zA-Z]/"`，语义为「排除任何含非字母字符的输入」）
+- **CON-003** 配置载体为 `public/plugin.json`；`over` 型的 `exclude` 为字符串形式的正则（当前 `"/[^a-zA-Z]|^(explain|word|vocabulary)$/i"`，语义为「排除任何含非字母字符的输入，或恰为功能指令关键词的输入」；flags 合法集为 `gimuy`）
 - **CON-004** 严格 TDD：测试先于实现；`npm test` 全绿 + `npx standard` 无错
 - **CON-005** 不新增依赖、不改变既有模块依赖方向
+- **CON-006** 匹配指令 MUST NOT 与功能指令关键词产生重复候补：`exclude` MUST 精确锚定地排除 `cmds` 中的全部纯 ASCII 字母关键词（由 `src/plugin-manifest.test.js` 守护）
 - **宪法原则 3** 单词解释内容 MUST 由 `utools.ai()` 生成，不接外部词典
 - **宪法原则 7** 不为不可能出现的场景编写错误处理（如对 `type` 为 `over` 时 `payload` 必然为字符串这一前提不写防御分支）
 
 ## Assumptions
 
-- **A-001**：`exclude: "/[^a-zA-Z]/"` 会排除任何含非字母字符（含空格）的输入，因此 uTools 回传的 `payload` 即用户输入的全部文本，无需再做截取或规整。
+- **A-001**：`exclude` 的首项 `[^a-zA-Z]` 会排除任何含非字母字符（含空格）的输入，因此 `over` 命中时 uTools 回传的 `payload` 即用户输入的全部文本（纯字母串），无需再做截取或规整。
 - **A-002**：自动查询的模型参数与手动点击「查询」完全一致——取当前已保存的模型偏好；无偏好时传 `undefined`，由既有 `useWordQuery` / `ai-call` 逻辑交给平台默认模型处理。
 - **A-003（最终取值由用户指示确定，2026-09-27）**：REQ-001 的长度区间 2~100 由用户指示确定，取代原 spec 派生的 64 上界。下界 2 使单字母单词（`a`、`I`）不命中；上界 100 大于最长英文单词（`pneumonoultramicroscopicsilicovolcanoconiosis`，45 个字母），对任何真实英文单词不改变可观察行为。
 
 ## Open Questions
 
-- **OPEN-001**（非阻塞，Owner: Team）：uTools 是否合并同一插件的功能指令与匹配指令命中？若键入 `word` 时同时出现两条目，是否需按 DEC-004 的后续方案处理。**实现后在真实 uTools 环境手工验证**，不阻断本规范。
+- ~~**OPEN-001**（非阻塞，Owner: Team）：uTools 是否合并同一插件的功能指令与匹配指令命中？~~ **已关闭（2026-09-27 15:27，真机实测）**：**不合并** —— 键入 `word` / `explain` 时同时出现两条目（功能指令 + 匹配指令）。处置见 DEC-005 / CON-006 / REQ-006。
 - **OPEN-002**（非阻塞，Owner: User）：匹配范围是否应放宽到连字符 / 撇号词汇（`well-known`、`don't`）？首版按 CON-001 取纯字母，如需放宽再单独迭代。
 
 ## Requirements Traceability
@@ -203,13 +229,15 @@ uTools 提供「匹配指令」机制（`plugin.json` → `features[].cmds[]` �
 | CON-003 | REQ-001、REQ-002 |
 | CON-004 | NFR-002、NFR-003 |
 | CON-005 | REQ-005、NFR-001 |
+| CON-006 | REQ-006 |
 | DEC-001 | REQ-001、REQ-004 |
 | DEC-002 | REQ-003 |
 | DEC-003 | REQ-001 |
-| DEC-004 | Non-Goals、OPEN-001 |
+| DEC-004（已由 DEC-005 取代） | Non-Goals、OPEN-001 |
+| DEC-005 | REQ-006、Non-Goals |
 | OUT-001 | Non-Goals |
 | OUT-002 | Non-Goals |
 | OUT-003 | Non-Goals、Constraints（宪法原则 3） |
 | OUT-004 | REQ-004、Non-Goals |
-| OPEN-001 | Open Questions（保留为未决，未转化为需求） |
+| OPEN-001 | Open Questions（**已关闭**，结论转化为 REQ-006） |
 | OPEN-002 | Open Questions（保留为未决，未转化为需求） |

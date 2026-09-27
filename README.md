@@ -8,7 +8,7 @@
 
 - `explain` / `查词` / `word` / `vocabulary`
 
-**匹配指令** — 主输入框内容为单个英文单词（仅字母，长度 2~100）时，候选中出现「单词详解」；选中后自动预填并查询该单词。复制一个单词后直接呼出 uTools 即可使用。
+**匹配指令** — 主输入框内容为单个英文单词（仅字母，长度 2~100）时，候选中出现「单词详解」；选中后自动预填并查询该单词。复制一个单词后直接呼出 uTools 即可使用。为免候补重复，`explain` / `word` / `vocabulary` 这三个既有功能指令关键词**不会**再额外触发匹配指令。
 
 ## 开发
 
@@ -64,7 +64,7 @@ public/
 
 ## 技术栈
 
-- Vitest 4 + Testing Library (154 个测试)
+- Vitest 4 + Testing Library (173 个测试)
 - uTools AI API（流式调用）
 - uTools dbStorage（偏好持久化）
 - uTools MCP Tools（registerTool）

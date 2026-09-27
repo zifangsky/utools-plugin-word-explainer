@@ -47,7 +47,8 @@ Language: zh-CN（与 .codexspec/config.yml 的 language.output 一致）
 
 - **Status**: confirmed（**2026-09-27 14:36 变更**，原为「MUST 为 `regex`」；理由见「变更记录」）
 - **Statement**: 指令 MUST 使用 `"type": "over"`，且 MUST 配 `exclude` 以排除非纯字母内容
-  （`exclude: "/[^a-zA-Z]/"`）。原约束的前提「`over` 会匹配任意文本（含中文与长句）」在配
+  （当前取值 `"/[^a-zA-Z]|^(explain|word|vocabulary)$/i"`，**2026-09-27 15:30 扩充**，见 CON-006
+  与「复验第 7 轮」）。原约束的前提「`over` 会匹配任意文本（含中文与长句）」在配
   `exclude` 后**不再成立**：`exclude` 命中的输入被直接排除，故中文（`你好`）、短语
   （`hello world`）、含数字（`abc123`）、含连字符（`well-known`）的输入均不会命中，
   **CON-001（仅匹配单个英文单词）仍被完整满足**。已用脚本对 17 组输入逐条核验。
@@ -81,7 +82,8 @@ Language: zh-CN（与 .codexspec/config.yml 的 language.output 一致）
 ### CON-003: 配置载体为 `public/plugin.json`
 
 - **Status**: confirmed（2026-09-27 14:36 字段形态随 CON-002 变更同步）
-- **Statement**: 匹配指令 MUST 配置在 `public/plugin.json` 的 `features[].cmds[]` 中。`cmds` 元素为对象形式：`regex` 型用 `{type, label, match, minLength, maxLength}`，`over` 型用 `{type, label, exclude, minLength, maxLength}`。`match` / `exclude` 均为**带斜杠与 flag 的字符串**（JSON 中反斜杠需双写）。当前采用 `over` 型。
+- **Statement**: 匹配指令 MUST 配置在 `public/plugin.json` 的 `features[].cmds[]` 中。`cmds` 元素为对象形式：`regex` 型用 `{type, label, match, minLength, maxLength}`，`over` 型用 `{type, label, exclude, minLength, maxLength}`。`match` / `exclude` 均为**带斜杠与 flag 的字符串**（JSON 中反斜杠需双写；flags 合法集为
+`gimuy`，故 `i` 可用）。当前采用 `over` 型，其 `exclude` 取值须同时满足 CON-002 与 CON-006。
 - **User Evidence**: uTools 官方文档「plugin.json 核心配置文件说明 → 匹配指令 / feature.cmds」；进入插件时 `onPluginEnter` 回调收到 `{code, type, payload}`，`type` 为匹配指令类型（`regex` 或 `over`）时 `payload` 为匹配到的文本。
 
 ### CON-004: 严格 TDD（测试先于实现）
@@ -95,6 +97,26 @@ Language: zh-CN（与 .codexspec/config.yml 的 language.output 一致）
 - **Status**: confirmed
 - **Statement**: 本改动 MUST NOT 引入任何新的 npm 依赖，MUST NOT 改变既有模块依赖方向（宪法原则 1 的无环约束）。
 - **User Evidence**: 宪法原则 7「简洁优先（YAGNI）」——匹配指令是平台配置能力，无需额外依赖。
+
+### CON-006: 匹配指令 MUST NOT 与功能指令关键词产生重复候补
+
+- **Status**: confirmed（2026-09-27 15:27 用户真机实测后新增）
+- **Statement**: `over` 匹配指令的 `exclude` MUST 排除 `features[].cmds` 中所有**纯 ASCII 字母**
+  关键词（当前为 `explain` / `word` / `vocabulary`），且 MUST 为**精确锚定 + 大小写不敏感**形式
+  （`^(...)$` 与 `i` flag），以免误伤 `words` / `wordy` 等以关键词为前缀的真实单词。该约束 MUST 由
+  自动化测试守护：`src/plugin-manifest.test.js` 遍历 `cmds` 中的纯 ASCII 关键词并断言全部被
+  `exclude` 排除，后续新增关键词若漏改 `exclude` 会直接失败。
+- **Rationale**: uTools **不合并**同一插件的功能指令与匹配指令命中（真机实测，见 OPEN-001 结论）。
+  若 `exclude` 不排除这些关键词，输入 `word` 时「搜索结果」出现功能指令条目、「匹配结果」出现
+  「单词详解」条目，同一插件占两个位置且语义重复。
+- **User Evidence**: 2026-09-27 15:27 用户复验后反馈「确实出现了两条」，指示「你通过匹配的正则表达式
+  把这个问题给优化了吧」——即在**保留功能指令**的前提下用 `exclude` 消除重叠（而非删除关键词，
+  OUT-004 继续有效）。
+- **uTools 侧匹配语义（2026-09-27 解包 `app.asar` 实证）**: 功能指令（`base`）的命中条件是
+  **「输入是关键词的子串」**（`index.js` 的 `F()` 用 `keyword.indexOf(input) >= 0`），故 `ephemeral`
+  不命中 `explain`、`password` 不命中 `word`。**已知残留**：当输入本身是关键词的**子串**时
+  （如 `in` / `or` / `ab` / `la`）仍会出现两条目；根治需枚举全部子串，但那会连带排除
+  `in` / `or` 等真实英文单词，代价大于收益，故不采纳（详见「复验第 7 轮」）。
 
 ## Decisions
 
@@ -122,13 +144,28 @@ Language: zh-CN（与 .codexspec/config.yml 的 language.output 一致）
 - **Reason**: 与插件标题「英语单词详解」呼应，同时与既有功能指令「查词」形成区分，便于两个条目并存时辨认。
 - **User Evidence**: 设计确认题「匹配指令在 uTools 搜索框里显示的指令名称（label）用哪个？」→ 用户选择「单词详解」
 
-### DEC-004: 首版不处理与英文功能指令的重复命中
+### DEC-004-SUPERSEDED: ~~首版不处理与英文功能指令的重复命中~~（已由 DEC-005 取代）
 
-- **Status**: confirmed
+- **Status**: superseded（2026-09-27 15:27；真机实测确认会重复，见 DEC-005）
 - **Decision**: 匹配指令首版不为排除 `explain` / `word` / `vocabulary` 而写负向断言。（原始表述含「正则首版采用最简形式 `/^[a-zA-Z]+$/`」；该字面量已随 CON-002 变更为 `over` + `exclude: "/[^a-zA-Z]/"` 而失效，本决策本身继续有效。）
 - **Alternatives Rejected**: 用负向断言排除这三个词（彻底避免重复，但正则可读性下降）；删除这三个英文功能指令（根治重复，但破坏既有用法）。
 - **Reason**: uTools 很可能已对同一插件的命中做合并；且重复条目不影响功能。待真实 uTools 环境实测后再决定是否优化，避免为未证实的问题增加复杂度。
 - **User Evidence**: 设计确认题「现有功能指令含 explain / word / vocabulary，可能产生重复条目，是否处理？」→ 用户选择「先不处理，实测后再定（推荐）」
+- **失效说明（2026-09-27 15:27）**: 本决策的前提「uTools 很可能已对同一插件的命中做合并」**经真机实测不成立**——输入 `word` 时「搜索结果」出现功能指令条目、「匹配结果」出现「单词详解」
+  条目（用户截图佐证，见 OPEN-001）。用户指示用 `exclude` 消除重叠，故本决策由 DEC-005 取代。
+
+### DEC-005: 以 `exclude` 排除功能指令关键词，保留功能指令本身
+
+- **Status**: confirmed（2026-09-27 15:27 用户指示）
+- **Decision**: 在 `over` 指令的 `exclude` 中**追加**对 `explain` / `word` / `vocabulary` 三个纯
+  ASCII 关键词的排除（精确锚定、大小写不敏感），使这些输入不再同时命中匹配指令；既有功能指令
+  **一条不删**（OUT-004 继续有效）。
+- **Alternatives Rejected**: ① 删除这三个英文功能指令（能根治重叠，但破坏既有用法，与 OUT-004 冲突）；
+  ② 枚举关键词的全部子串（uTools 的功能指令匹配为**子串**匹配，枚举可根治，但会连带排除 `in` /
+  `or` / `ab` 等**真实英文单词**，功能损失大于收益）；③ 维持不动（用户已明确要求处理）。
+- **Reason**: 用户诉求是「同一插件不要占两格」，而非「取消关键词入口」。`exclude` 是官方为 `over`
+  型提供的排除机制，且**不存在 `regex` 型那样的合法性门槛**（见 CON-006 的机制说明），改动面最小。
+- **User Evidence**: "确实出现了两条，你通过匹配的正则表达式把这个问题给优化了吧"
 
 ## Out of Scope
 
@@ -158,21 +195,25 @@ Language: zh-CN（与 .codexspec/config.yml 的 language.output 一致）
 - **Status**: confirmed
 - **Statement**: 不删除、不改名现有 `explain` / `查词` / `word` / `vocabulary` 功能指令。
 - **Reason**: 见 DEC-004；保持既有用户习惯。
-- **User Evidence**: 见 DEC-004 用户选择「先不处理，实测后再定」
+- **User Evidence**: 见 DEC-004 用户选择「先不处理，实测后再定」。**2026-09-27 15:27 补注**：实测确认会重复后，处置方式为「用 `exclude` 排除关键词」而非删除指令
+  （DEC-005），故本条**继续有效**。
 
 ## Open Questions
 
 ### OPEN-001: uTools 是否合并同一插件的功能指令与匹配指令命中
 
-- **Status**: open
-- **Why It Matters**: 决定是否需要为 `explain` / `word` / `vocabulary` 增加负向断言（DEC-004 的后续）。
-- **Owner**: Team（实现后于真实 uTools 环境手工验证）
-- **阻塞性**: 非阻塞——不阻断 spec/plan/tasks 生成与实现。
+- **Status**: closed（2026-09-27 15:27 用户真机实测）
+- **结论**: **不合并**。输入 `word` / `explain` 时，「搜索结果」出现功能指令条目、「匹配结果」出现
+  匹配指令条目（「单词详解」），同一插件占两个位置（用户截图佐证）。
+- **处置**: 由 DEC-005 + CON-006 处理（`exclude` 追加关键词排除）；对应 Task 5.4 已完成。
+- **Why It Matters（历史）**: 决定是否需要为 `explain` / `word` / `vocabulary` 增加负向断言。
+- **Owner**: Team（已于真实 uTools 环境完成手工验证）
+- **阻塞性**: 已消除。
 
 ### OPEN-002: 匹配范围是否含连字符 / 撇号词汇
 
 - **Status**: open
-- **Why It Matters**: 决定匹配范围是否放宽到连字符 / 撇号词汇（如 `well-known`、`don't`）——当前 `exclude: "/[^a-zA-Z]/"` 会将这些词整体排除。
+- **Why It Matters**: 决定匹配范围是否放宽到连字符 / 撇号词汇（如 `well-known`、`don't`）——当前 `exclude`（CON-002 / CON-006 取值，含非字母排除项）会将这些词整体排除。
 - **Owner**: User
 - **阻塞性**: 非阻塞——首版按 CON-001 取纯字母，如需放宽再单独迭代。
 - **AI 假设（未确认）**: 依据宪法原则 3「单个英文单词」，首版取纯 `[a-zA-Z]`。用户在阶段摘要确认中未对该假设单独表态，故本条保持 `open`，仅 CON-001 为绑定约束。
@@ -182,6 +223,7 @@ Language: zh-CN（与 .codexspec/config.yml 的 language.output 一致）
 | 被替换条目 | 替代条目 | 替换时间 |
 |-----------|---------|---------|
 | `CON-002-SUPERSEDED`（匹配类型 MUST 为 `regex`） | `CON-002`（MUST 为 `over` + 严格 `exclude`） | 2026-09-27 14:36 |
+| `DEC-004-SUPERSEDED`（首版不处理与英文功能指令的重复命中） | `DEC-005`（以 `exclude` 排除关键词，保留功能指令） | 2026-09-27 15:27 |
 
 ## Confirmation Log
 
@@ -191,6 +233,13 @@ Language: zh-CN（与 .codexspec/config.yml 的 language.output 一致）
 - **User Confirmation**: 明确选择「确认，继续生成 spec」；对宪法计数选择「本次一并修正（推荐）」。
 - **Entries Confirmed**: NEED-001, NEED-002, CON-001, CON-002, CON-003, CON-004, CON-005, DEC-001, DEC-002, DEC-003, DEC-004, OUT-001, OUT-002, OUT-003, OUT-004
 - **Entries Remaining Open**: OPEN-001, OPEN-002（均非阻塞，不阻断后续生成）
+
+### Session 2026-09-27 15:27
+
+- **Summary Presented**: 复验结果回写——Task 5.2 负例集合经用户实测「符合预期，不出现『单词详解』」；Task 5.4 确认 uTools **不合并**同一插件的功能指令与匹配指令命中（输入 `word` 出现两条）。
+- **User Confirmation**: 用户指示「通过匹配的正则表达式把重复问题优化」。
+- **Entries Added/Changed**: 新增 `CON-006`（匹配指令 MUST NOT 与功能指令关键词产生重复候补）、`DEC-005`（以 `exclude` 排除关键词）；`DEC-004` 降为 `DEC-004-SUPERSEDED`；`OPEN-001` 关闭。
+- **Entries Remaining Open**: OPEN-002（非阻塞，Owner: User）
 
 ## 变更记录
 
@@ -225,6 +274,46 @@ Language: zh-CN（与 .codexspec/config.yml 的 language.output 一致）
 - **对 REQ-001 / REQ-002 / REQ-003 的影响**: 无。`regex` 路径的字段与行为未变。
 - **仍未核验（交接用户）**: Task 5.2 的负例集合、Task 5.3 端到端（预填 + 自动查询、功能指令回归）、
   Task 5.4 的 OPEN-001（输入 `word` 是否同时出现两条目）。
+
+
+### 2026-09-27 15:30 复验第 7 轮：**重复候补修正**（Task 5.2 / 5.4 收口）
+
+- **触发**: 用户第 7 轮复验回报两项结果：
+  1. **Task 5.2 负例集合：符合预期** —— `你好` / `hello world` / `abc123` / `well-known` /
+     101 个连续字母 / `查词` 均**不出现**「单词详解」；
+  2. **Task 5.4（OPEN-001）：确认不合并** —— 输入 `word` / `explain` 时，同一插件在「搜索结果」
+     与「匹配结果」各占一格（用户截图）。用户指示：**用匹配的正则把重复优化掉**。
+- **uTools 侧匹配语义（本轮解包 `app.asar` 实证，新增证据）**:
+  1. 功能指令（`base`）命中条件是**「输入是关键词的子串」** —— `index.js` 的
+     `F(e,t,n,r,a)` 用 `e.match.indexOf(r) >= 0`（`r` 为输入小写），故 `explain` 的候补会在输入
+     `e` / `ex` / `la` / `in` 时出现，而 `ephemeral` 不出现；
+  2. `over` 的匹配判定为 `A(e,t,n)`：`minLength > len || maxLength < len ||
+     (exclude && regexCmdTest(exclude, input))` 三项任一成立即跳过 —— 与本仓库测试所用模型**逐字一致**；
+  3. `over` 的 `exclude` 走 `H(exclude)` **单参数**路径，直接返回正则对象、**无合法性判定**；
+     `regex` 的 `match` 走 `H(match, cmd)` 双参数路径，会触发「任意匹配正则」判定（已确证）。
+- **已执行（严格 TDD）**:
+
+  | 项 | 变更 |
+  |----|------|
+  | `public/plugin.json` | `wordMatch` 的 `exclude`：`"/[^a-zA-Z]/"` → **`"/[^a-zA-Z]|^(explain|word|vocabulary)$/i"`** |
+  | `src/plugin-manifest.test.js` | **新建**，19 条测试：`over` 参数契约、`exclude` 与 `cmds` 纯 ASCII 关键词的**不重叠断言**（防漂移）、大小写变体、普通单词正向、边界与非字母负例 |
+  | `requirements.md` | 新增 CON-006 / DEC-005；DEC-004 → `DEC-004-SUPERSEDED`；OPEN-001 关闭；CON-002 / CON-003、Superseded Entries、Confirmation Log 同步 |
+  | `spec.md` | 新增 REQ-006（含 3 条 Scenario 与自动化验证方式）；Constraints 补 CON-006、更新 CON-002/CON-003 与 A-001；Non-Goals、Open Questions、平台契约、Traceability 同步 |
+  | `tasks.md` | 5.2 与 5.4 置为完成（附用户实测结论）；新增第 7 组任务记录；Notes 中两处已失效条目更正 |
+  | `plan.md` | 配置契约与要点更新；**PLD-5 决策变更**（转为采纳 D-1 的等价物）；实现后注记补第 ④ 条 |
+  | `CLAUDE.md` / `CONTEXT.md` / `README.md` | 同步 `exclude` 取值、关键词重叠约束与测试计数 154 → **173** |
+
+- **测试先行证据（宪法原则 8）**: 先建 `src/plugin-manifest.test.js` →
+  `npx vitest run src/plugin-manifest.test.js` 得 **`2 failed | 17 passed (19)`**，失败原因为
+  「功能指令关键词会同时命中匹配指令」（即重复候补）；再改 `plugin.json` → **19 passed**。
+- **门禁**: `npm test` **173 passed**（154 + 19）、`npx standard` 退出码 0。
+- **⚠️ 已知残留（已向用户明示，未处理）**: 因功能指令为**子串**匹配，当输入本身是关键词的**子串**时
+  （如 `in` / `or` / `ab` / `la`）仍可能出现两条目。根治需枚举全部子串，但那会连带排除
+  `in` / `or` / `ab` 等**真实英文单词**，故不采纳；备选方案为「删除三个 ASCII 关键词、仅保留 `查词`」，
+  代价是失去这三个关键词入口（与 OUT-004 冲突），需用户决策。
+- **另注（非本插件配置问题）**: 用户截图的「搜索结果」中同一关键词**各出现两条**（其中一条带 `dev`
+  角标），推断为**两份插件实例**（商店版 + 开发版）分别命中所致，与匹配指令的重叠无关，`exclude`
+  无法消除。
 
 ### 2026-09-27 14:39 复验第 5 轮：**推翻第 4 轮判定** —— 生效路径为 `over`，`regex` 从未生效
 

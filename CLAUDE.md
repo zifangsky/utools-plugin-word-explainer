@@ -11,7 +11,7 @@ React + Vite 工程，在 uTools 平台中运行的桌面插件。用户输入�
 npm run dev      # 启动开发服务器 (localhost:5173) — 只提供前端代码，不注册指令
 npm run build    # 生产构建到 dist/
 npm run deploy   # 构建 + 复制产物到 public/（uTools 应用商店打包用）
-npm test         # 运行 154 个测试 (vitest)
+npm test         # 运行 173 个测试 (vitest)
 ```
 
 > **⚠️ 改了 `public/plugin.json` 后：在 uTools 开发者工具中「卸载（开发模式）」再重新安装**
@@ -55,8 +55,17 @@ npm test         # 运行 154 个测试 (vitest)
 >   ⚠️ **不要用「候补 label 与某条指令的 label 一致」来判定生效指令** —— uTools 对同一 feature
 >   的候补显示 label **并非取被命中指令自身的 label**（第 4 轮据此误判过一轮）。
 > - **当前形态**：`cmds` = `["单词详解", { "type": "over", "label": "单词详解",
->   "exclude": "/[^a-zA-Z]/", "minLength": 2, "maxLength": 100 }]`。`over` 的 `exclude` 承担
->   「仅单个英文单词」的语义（等价于原 `^[a-zA-Z]+$` 且更严格——空格亦被排除）。
+>   "exclude": "/[^a-zA-Z]|^(explain|word|vocabulary)$/i", "minLength": 2, "maxLength": 100 }]`。
+>   `exclude` 承担两件事：①「仅单个英文单词」的语义（`[^a-zA-Z]`，等价于原 `^[a-zA-Z]+$` 且更
+>   严格——空格亦被排除）；②**排除与功能指令重名的关键词**（`^(explain|word|vocabulary)$`），
+>   否则输入 `word` 会同时命中功能指令与匹配指令。
+> - **⚠️ 关键词重叠约束（2026-09-27 真机实测 + 解包取证）**：uTools **不合并**同一插件的功能指令
+>   与匹配指令命中，二者各占一格；且功能指令（`base`）的命中条件是**「输入是关键词的子串」**
+>   （`index.js` 的 `F()` 用 `keyword.indexOf(input) >= 0`，故 `ephemeral` 不命中 `explain`）。
+>   因此**新增任何纯 ASCII 关键词时 MUST 同步把它加入 `exclude` 的锚定组**；`src/plugin-manifest.test.js`
+>   会遍历 `cmds` 断言这一点，漏改即测试失败。
+>   已知残留：当输入本身是关键词的**子串**时（如 `in` / `or` / `ab` / `la`）仍会出现两条目；根治需
+>   枚举全部子串，但会连带排除 `in` / `or` 等**真实英文单词**，代价大于收益，故不采纳。
 > - **⚠️ 代码侧联动（易漏）**：`onPluginEnter` 的 `action.type` **随匹配类型变化**（`over` 型即
 >   `'over'`，`regex` 型即 `'regex'`）。**改 `plugin.json` 的匹配类型时 MUST 同步
 >   `src/main-page/index.jsx` 的守卫**（当前为 `enterAction.type !== 'over'`），否则会出现

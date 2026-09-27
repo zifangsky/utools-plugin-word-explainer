@@ -1,19 +1,19 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version: 1.1.1 → 1.1.2
-Bump Rationale: PATCH — 非语义修正。原则 2 与原则 6 中的测试计数从 141 更正为实测值 154（本分支新增「匹配指令」特性 8 条 + 启动路径性能修复 5 条），并同步 Template Consistency Check 中对 CLAUDE.md / README.md 的一致性判断。无原则增删或重定义。
+Version: 1.1.2 → 1.1.3
+Bump Rationale: PATCH — 非语义修正。原则 2 与原则 6 中的测试计数从 154 更正为实测值 173（新增 `src/plugin-manifest.test.js` 的 19 条配置契约测试），并同步 Template Consistency Check 中对 CLAUDE.md / README.md 的一致性判断。无原则增删或重定义。
 
 Changes:
-- Modified: 原则 2「行为驱动测试」——测试基准 141 → 154
-- Modified: 原则 6「文档与代码同步」——文档测试计数引用 141 → 154
-- Modified: 顶部版本号 1.1.1 → 1.1.2；最后修订 2026-09-27
+- Modified: 原则 2「行为驱动测试」——测试基准 154 → 173
+- Modified: 原则 6「文档与代码同步」——文档测试计数引用 154 → 173
+- Modified: 顶部版本号 1.1.2 → 1.1.3；最后修订 2026-09-27
 
 Template Consistency Check:
 - .codexspec/templates/docs/tasks-template-simple.md: ✅ aligned（无计数引用）
 - .codexspec/templates/docs/tasks-template-detailed.md: ✅ aligned（无计数引用）
-- CLAUDE.md: ✅ aligned（第 14 行「运行 154 个测试」与实际一致）
-- README.md: ✅ aligned（「Vitest 4 + Testing Library (154 个测试)」与实际一致）
+- CLAUDE.md: ✅ aligned（第 14 行「运行 173 个测试」与实际一致）
+- README.md: ✅ aligned（「Vitest 4 + Testing Library (173 个测试)」与实际一致）
 
 Deferred TODOs:
 - TODO(USER): 是否将「`utools.dbStorage` 读取为同步 IPC，启动路径 MUST NOT 批量读取」写入「性能标准」章节？
@@ -105,7 +105,7 @@ Changes:
   （`utools.db` / `dbStorage`）的集成测试。
 - 函数签名变更时 MUST 全局搜索所有调用点，并核对 `expect(mockFn).toHaveBeenCalledWith(...)`
   断言覆盖全部参数。
-- 测试基准：当前 **154** 个测试；新增模块时测试数随之增长并在文档同步。
+- 测试基准：当前 **173** 个测试；新增模块时测试数随之增长并在文档同步。
 - 测试顺序遵循原则 8（强制严格 TDD）：MUST 先编写失败测试（RED），再写最小实现（GREEN），
   最后在测试保护下重构（REFACTOR）；MUST NOT 先写实现再补测试。
 - 理由：历史踩坑——`use-word-query` 漏传 `db` 参数，因被测函数被 `vi.fn()` mock 而未执行真实逻辑，
@@ -142,7 +142,7 @@ Changes:
 
 - 新增 `src/<module>/` 或新增测试后，MUST 同步更新 `CLAUDE.md`（架构图树形结构、依赖方向、
   存储说明）与 `README.md`（项目结构树、测试计数）。
-- 文档中的测试计数 MUST 与实际 `npm test` 通过数一致（当前 **154**），MUST NOT 出现数字脱节。
+- 文档中的测试计数 MUST 与实际 `npm test` 通过数一致（当前 **173**），MUST NOT 出现数字脱节。
 - 版本发布说明 MUST 记录于 `releases/vX.Y.Z.md`，插件介绍于 `releases/plugin-intro.md`。
 - 涉及构建流程变更时 MUST 同步 `package.json` 与 `.gitignore` 的构建产物路径。
 - 理由：历史上 CLAUDE.md/README.md 曾滞后（「58 个测试」实为 86），同步规则避免误导。
@@ -270,4 +270,4 @@ Changes:
 - **冲突处理**：用户请求与宪法冲突时，MUST 停止并说明违反的原则，提出合规替代方案，须用户显式确认方可覆盖。
 - **所有 PR / 审查 MUST 验证合规**。
 
-**版本**: 1.1.2 | **批准日期**: 2026-07-06 | **最后修订**: 2026-09-27
+**版本**: 1.1.3 | **批准日期**: 2026-07-06 | **最后修订**: 2026-09-27

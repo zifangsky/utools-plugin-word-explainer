@@ -25,6 +25,7 @@ Language: zh-CN（与 .codexspec/config.yml 的 language.output 一致）
 ## 3. uTools 平台配置
 
 - [x] 3.1 **[P]** 在 `public/plugin.json` 的 `features` 数组追加一项，内容严格等于 plan.md「`public/plugin.json` 新增配置契约」：`code` 为 `wordMatch`，`cmds` 含 `{ type: "over", label: "单词详解", exclude: "/[^a-zA-Z]/", minLength: 2, maxLength: 100 }`。MUST NOT 改动既有 `explain` feature 与 `tools` 配置。Covers: REQ-001、DEC-001、DEC-003、OUT-004; Plan: P5 / 配置契约
+  - **注（2026-09-27 第 7 轮）**：本条为**当时的执行记录**；`exclude` 现值为 `"/[^a-zA-Z]|^(explain|word|vocabulary)$/i"`（消除与功能指令关键词的重复候补），见第 7 组任务。
 - [x] 3.2 校验配置：用 node 解析 `public/plugin.json` 确认 JSON 合法、`features` 长度由 1 变为 2、新 feature 的字段值与上面逐项一致、既有 feature 的 `code`/`cmds` 与改动前相同（可用 `git diff` 佐证）。Covers: REQ-001、OUT-004; Plan: P5 验证
 
 ## 4. 文档与代码同步
@@ -36,14 +37,19 @@ Language: zh-CN（与 .codexspec/config.yml 的 language.output 一致）
 ## 5. 门禁与人工核验
 
 - [x] 5.1 运行 `npm test` 与 `npx standard`，记录实际通过数与 lint 结果；两者 MUST 全绿/无错。同一步以 `git diff --stat` 确认改动面不含 `package.json` / `package-lock.json`、`git status` 无新增 `src/<module>/` 目录，据此验证「无新增依赖、无新模块」。Covers: NFR-002、NFR-001; Plan: P7 门禁
-- [ ] 5.2 真实 uTools 手工核验 REQ-001：`npm run dev` 启动 Vite；在 uTools 开发者工具中「卸载（开发模式）」→「安装（开发模式）」重载 `plugin.json`；主输入框依次输入 `ephemeral`（期望出现「单词详解」）、`你好`、`hello world`、`abc123`、`well-known`、101 个连续字母（均期望不出现）、`查词`（期望不出现「单词详解」且既有功能指令行为不变）。Covers: REQ-001、CON-001; Plan: P7 人工核验（spec REQ-001 记录的核验准则）
-  - **核验进度（部分，2026-09-27）**：正向 `ephemeral` 已多轮真机实测命中（第 4、6 轮）；负例集合（`你好` / `hello world` / `abc123` / `well-known` / 101 个连续字母 / `查词`）尚未整体实测。**待补验**（配置侧已用还原的判定逻辑对 18 组输入逐条核验通过，见 `issues.md`）。
+- [x] 5.2 真实 uTools 手工核验 REQ-001：`npm run dev` 启动 Vite；在 uTools 开发者工具中「卸载（开发模式）」→「安装（开发模式）」重载 `plugin.json`；主输入框依次输入 `ephemeral`（期望出现「单词详解」）、`你好`、`hello world`、`abc123`、`well-known`、101 个连续字母（均期望不出现）、`查词`（期望不出现「单词详解」且既有功能指令行为不变）。Covers: REQ-001、CON-001; Plan: P7 人工核验（spec REQ-001 记录的核验准则）
+  - **核验结果（2026-09-27 15:27，用户真机实测）**：**通过**。正向 `ephemeral` 多轮命中（第 4、6 轮）；负例集合（`你好` / `hello world` / `abc123` / `well-known` / 101 个连续字母 / `查词`）经用户实测**均未出现**「单词详解」，与预期一致。配置侧另有 18 组输入的离线逐条核验记录（见 `issues.md`）。
 
   > **参数变更（第 5 轮，2026-09-27）**：原负例含「65 个连续字母」，因 `maxLength` 由 64 改为 100，该输入**现已命中**，故负例上界相应调整为 **101** 个连续字母。
 - [x] 5.3 真实 uTools 手工核验端到端行为：选中「单词详解」进入后，确认输入框已预填该单词且详解自动开始生成（REQ-003）；随后退出并以功能指令 `查词` 进入，确认输入框为空且无自动查询（REQ-004）。Covers: REQ-003、REQ-004; Plan: P7 人工核验
   - **核验结果（2026-09-27，用户真机确认）**：**通过**。经匹配指令进入后输入框已预填、详解自动开始生成（即 `enterAction.type !== 'over'` 守卫生效）。保留项：本轮未单独复测「以功能指令 `查词` 进入时不自动查询」这一分支。
   - **核验中发现的额外问题**：进入后需等待较久才开始输出，已定位为启动路径的同步 IPC 与远程请求阻塞，并另行修复（提交 `71df3a8`，详见 requirements.md「复验第 6 轮」）。
-- [ ] 5.4 核验 OPEN-001：输入 `word` 观察是否同时出现功能指令与匹配指令两条目；将观察结论回写 `requirements.md` 的 OPEN-001（若为「合并」则关闭该条目；若为「不合并」则保留并记录是否按 DEC-004 后续处理）。Covers: OPEN-001; Plan: P7 人工核验
+- [x] 5.4 核验 OPEN-001：输入 `word` 观察是否同时出现功能指令与匹配指令两条目；将观察结论回写 `requirements.md` 的 OPEN-001（若为「合并」则关闭该条目；若为「不合并」则保留并记录是否按 DEC-004 后续处理）。Covers: OPEN-001; Plan: P7 人工核验
+  - **核验结果（2026-09-27 15:27，用户真机实测）**：**不合并** —— 输入 `word` / `explain` 时同一插件在
+    「搜索结果」与「匹配结果」各占一格。结论已回写 `requirements.md` 的 OPEN-001（**关闭**），并按用户
+    指示由 DEC-005 / CON-006 / REQ-006 处理（原 DEC-004 降为 superseded）。
+  - **另观察**：「搜索结果」中同一关键词出现两条（其中一条带 `dev` 角标），推断为商店版与开发版两份
+    插件实例分别命中，非本插件配置所致，`exclude` 无法消除。
 
 ## 6. 交付
 
@@ -53,6 +59,16 @@ Language: zh-CN（与 .codexspec/config.yml 的 language.output 一致）
     上游跟踪已建立），当前 HEAD 为 `b36a6e1`（`docs:` 收尾文档一致性审查）。
   - **PR 未创建（用户决定）**：用户选择「先补验再提 PR」——待 5.2 的负例集合与 5.4（OPEN-001）
     实测完成后一并创建，以符合本条「附 5.2~5.4 核验记录」的要求。
+
+## 7. 重复候补修正（2026-09-27 第 7 轮，用户指示）
+
+- [x] 7.1 **[RED]** 新建 `src/plugin-manifest.test.js`：断言 `over` 参数契约（`label` / `minLength` 2 / `maxLength` 100 / `exclude` 为合法正则字面量）；**防漂移断言**——遍历 `features[].cmds` 的纯 ASCII 关键词，断言全部被 `exclude` 排除（含大小写变体）；正向 `ephemeral` / `hello` / `ab` / 100 字母；负例 `a` / `I` / 空串 / 101 字母 / `你好` / `查词` / `hello world` / `abc123` / `well-known` / ` words`。Covers: REQ-006、CON-006、DEC-005; Plan: PLD-5（决策变更）
+- [x] 7.2 **[RED 确认]** 运行 `npx vitest run src/plugin-manifest.test.js` → **`2 failed | 17 passed (19)`**，失败原因为「功能指令关键词会同时命中匹配指令」（即重复候补），与预期一致。
+- [x] 7.3 **[GREEN]** 修改 `public/plugin.json` 的 `wordMatch.exclude` → `"/[^a-zA-Z]|^(explain|word|vocabulary)$/i"`；重跑该文件测试 → **19 passed**。MUST NOT 改动 `explain` feature 与 `tools`（OUT-004 继续有效）。
+- [x] 7.4 文档同步：`requirements.md`（CON-006 / DEC-005 / DEC-004 降级 / OPEN-001 关闭 / Superseded Entries / Confirmation Log）、`spec.md`（REQ-006 + Constraints + Non-Goals + Open Questions + 平台契约 + Traceability）、`tasks.md` 本组、`plan.md`（配置契约 + PLD-5 决策变更 + 实现后注记）、`CLAUDE.md` / `CONTEXT.md` / `README.md`（`exclude` 取值、关键词重叠约束、测试计数 154 → 173）。
+- [x] 7.5 门禁：`npm test` → **173 passed**（154 + 19）；`npx standard` → 退出码 0。
+- [ ] 7.6 真机复验（用户）：配置变更需在 uTools 开发者工具中「卸载（开发模式）」→「安装（开发模式）」重建索引后生效；预期输入 `word` / `explain` 时同一插件只余功能指令一条。
+  - **状态**：复验步骤已交付，**待用户确认**。
 
 ## Dependencies
 
@@ -89,12 +105,16 @@ Language: zh-CN（与 .codexspec/config.yml 的 language.output 一致）
 | P7 门禁 | NFR-002 | 5.1 |
 | P7 人工核验 | REQ-001、REQ-003、REQ-004 | 5.2、5.3 |
 | P7 门禁（NFR-001 部分） | NFR-001 | 5.1 |
+| `src/plugin-manifest.test.js`（新建，第 7 轮） | REQ-006、CON-006 | 7.1、7.2、7.3 |
+| 规格产物与根文档同步（第 7 轮） | CON-006、DEC-005 | 7.4 |
 | Plan「分支与提交」 | NFR-002（提交与 PR 门禁） | 6.1、6.2 |
 
 ## Unmapped Tasks
 
 - **6.1、6.2（分支与交付）**：不对应任何单条 `REQ`/`NFR`，依据为宪法「开发工作流 → 分支策略（红线）」与「质量门禁 → PR 要求」的仓库策略，属必要的实现支撑，非范围扩张。
 - **5.4（OPEN-001 实测回写）**：不对应 `REQ`，依据为 requirements.md 的 OPEN-001 处置约定（DEC-004「实测后再定」）。该任务不修改产品行为，仅回写观察结论。
+- **7.4（规格产物与根文档同步）**：不对应单条 `REQ`，属变更落地的文档一致性要求（宪法原则 6）。
+- **7.6（真机复验）**：不对应单条 `REQ`，属配置变更生效的前置条件——uTools 仅在「安装（开发模式）」时重建主搜索框的指令索引（CLAUDE.md 已记录该实测结论）。
 
 ## Notes
 
@@ -102,8 +122,8 @@ Language: zh-CN（与 .codexspec/config.yml 的 language.output 一致）
 - 任务 2.3 MUST NOT 复用 `handleQuery`，也 MUST NOT 把 `selectedModel` state 作为模型来源（plan.md PLD-3、PLD-4）。
 - 任务 4.1 / 4.2 的计数 `N` 以 2.4 记录的 `npm test` 实际通过数为准，MUST NOT 使用估算值（宪法原则 6）。
 - 任务 4.1 与 4.2 均涉及含 Unicode box-drawing 字符的树形行（`CLAUDE.md` 架构树、`README.md` 项目结构树），MUST 用按行号操作的脚本（宪法「代码规范」条款 + plan P6 编辑方式约束）。
-- 任务 3.1 的 `maxLength: 64` 为 spec 派生边界（spec Assumption A-003），DEC-004 确认的正则字面量 `/^[a-zA-Z]+$/` 不得修改。
-- 未采纳 `review-spec.md` 的 Design Opportunity D-1（`plugin.json` 配置断言测试），理由见 plan.md PLD-5；任务 3.2 以一次性校验替代。
+- ~~任务 3.1 的 `maxLength: 64` 为 spec 派生边界（spec Assumption A-003），DEC-004 确认的正则字面量 `/^[a-zA-Z]+$/` 不得修改。~~ **已失效（2026-09-27）**：长度区间经用户指示改为 2~100（A-003），匹配类型改为 `over` + `exclude`（CON-002），原正则字面量随 DEC-004 一并失效。
+- ~~未采纳 `review-spec.md` 的 Design Opportunity D-1（`plugin.json` 配置断言测试）~~ → **决策变更（2026-09-27，第 7 轮）**：**转为采纳**，新增 `src/plugin-manifest.test.js`（见 plan.md PLD-5 的「决策变更」注记与第 7 组任务）。理由：`exclude` 与 `cmds` 关键词的一致性需机器化守护，一次性校验不足以防止后续漂移。
 - 未采纳 `review-plan.md` 的 PD-2（把 5.2 的核验步骤脚本化），理由是本次仅一次核验、收益不足。
 
 
@@ -169,5 +189,18 @@ Language: zh-CN（与 .codexspec/config.yml 的 language.output 一致）
 - **`6.2`：待 `5.2`~`5.4` 完成后执行。**
 
 - **测试总数（交付值）** —— 任务 2.4 / 5.1 记录时的计数为 **149 passed**（基线 141 + 本特性 8）；其后为修复
-  「匹配指令进入后启动路径阻塞」新增 5 条测试（提交 `71df3a8`），**最终交付计数为 154 passed**。
-  `CLAUDE.md` 与 `README.md` 中的计数已同步为 154。
+  「匹配指令进入后启动路径阻塞」新增 5 条测试（提交 `71df3a8`），该轮计数为 154 passed；
+  `CLAUDE.md` 与 `README.md` 中的计数同步为 154。**第 7 轮新增 19 条**（`src/plugin-manifest.test.js`），
+  **最终交付计数为 173 passed**；文档计数与宪法（1.1.3）均已同步为 173。
+
+### 第 7 轮（重复候补修正，2026-09-27 15:30）
+
+| 任务 | 结果 |
+|------|------|
+| 7.1 / 7.2 | 新建 `src/plugin-manifest.test.js`（19 条）；首次运行 **`2 failed \| 17 passed (19)`**，失败原因为「功能指令关键词会同时命中匹配指令」，与预期一致 |
+| 7.3 | `public/plugin.json` 的 `wordMatch.exclude` → `"/[^a-zA-Z]|^(explain|word|vocabulary)$/i"`；该文件测试转 **19 passed** |
+| 7.4 | `requirements.md`（11 处）、`spec.md`（10 处）、`tasks.md`（6 处）、`plan.md`（4 处）经脚本逐处断言命中后替换（共 31 处，全部 `[OK]`）；根文档同步 `CLAUDE.md` / `CONTEXT.md` / `README.md` |
+| 7.5 | `npm test` → **173 passed**（13 文件）；`npx standard` → 退出码 0 |
+| 7.6 | 待用户真机复验（需「卸载（开发模式）」→「安装（开发模式）」重建索引） |
+
+**回读校验**：`grep` 确认新增锚点（CON-006 / DEC-005 / DEC-004-SUPERSEDED / REQ-006 / 复验第 7 轮）均已落地；残留的旧字面量 `"/[^a-zA-Z]/"` 全部位于**历史快照段落**（第 5 轮变更理由、DEC-004 原文、变更记录、任务 3.1 执行记录），符合「历史记录不追溯修改」的既定约定。

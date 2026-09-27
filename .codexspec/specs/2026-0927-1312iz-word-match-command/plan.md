@@ -108,6 +108,8 @@ Language: zh-CN（与 .codexspec/config.yml 的 language.output 一致）
 
 **Rationale**：JSON 字段断言属配置快照式校验，对本次单一变更的回归价值低于其维护成本（原则 7）。D-1 为建议项而非缺陷，spec 未将其列为必需。
 
+> **决策变更（2026-09-27 第 7 轮）**：本决策**已推翻，转为采纳 D-1 的等价物**。触发原因：真机实测确认uTools 不合并同一插件的功能指令与匹配指令命中（OPEN-001），需用 `exclude` 排除关键词以消除重复（DEC-005）。此时 `exclude` 与 `features[].cmds` 之间的**一致性**成为易漂移点（改一处易漏改另一处），一次性校验无法守住。故新建 `src/plugin-manifest.test.js`，以「遍历 `cmds` 纯 ASCII 关键词 → 断言全被 `exclude` 排除」的**派生式断言**替代字段快照：既覆盖 REQ-006，又能在后续漂移时立即失败。
+
 ## Architecture
 
 ```
@@ -164,7 +166,7 @@ use-word-query ──► prompt-template ──► ai-call（utools.ai 流式）
     {
       "type": "over",
       "label": "单词详解",
-      "exclude": "/[^a-zA-Z]/",
+      "exclude": "/[^a-zA-Z]|^(explain|word|vocabulary)$/i",
       "minLength": 2,
       "maxLength": 100
     }
@@ -174,15 +176,16 @@ use-word-query ──► prompt-template ──► ai-call（utools.ai 流式）
 
 要点：
 
-- `exclude` 为字符串形式正则（带斜杠），本式无需转义反斜杠；其语义为「输入含任何非字母字符即整条排除」，故 uTools 回传的 `payload` 必然为纯字母串（Assumption A-001）。
+- `exclude` 为字符串形式正则（带斜杠），本式无需转义反斜杠；其语义为「输入含任何非字母字符、**或恰为功能指令关键词**（`explain` / `word` / `vocabulary`，大小写不敏感）即整条排除」，故 `over` 命中时 uTools 回传的 `payload` 必然为纯字母串（Assumption A-001）。关键词排除项由 CON-006 要求、`src/plugin-manifest.test.js` 守护。
 - 长度区间 `2 ~ 100` 的最终取值由用户指示确定（Assumption A-003），取代原 spec 派生的 64 上界。
 - 现有 `explain` feature、`tools` 配置一字不动（DEC-001、OUT-004）。
 
 > **实现后注记（2026-09-27 完成时回填）**：本计划为 2026-09-27 13:20 制定时的快照，实现过程有三处偏离，均已就地说明或记于此：
 >
 > ① 匹配类型由 `regex` 改为 `over` + `exclude`（见上方配置契约与 requirements.md 的 CON-002）；
-> ② 交付时测试总数为 **154 passed**（基线 141 + 本特性 8 + 启动路径性能修复 5）；
+> ② 交付时测试总数为 **154 passed**（基线 141 + 本特性 8 + 启动路径性能修复 5；第 7 轮后为 **173**，见 ④）；
 > ③ 上文「现状代码定位」表中的行号对应**实现前**的 `src/` 代码。性能修复（提交 `71df3a8`）改动 `src/main-page/index.jsx` 后行号已位移（例如 `handleQuery` 现位于第 80~85 行，原为 64~68），引用时以实际代码为准。
+> ④ `exclude` 于第 7 轮扩充为 `/[^a-zA-Z]|^(explain|word|vocabulary)$/i`（消除与功能指令关键词的重复候补，见 CON-006 / DEC-005）；PLD-5 的「不采纳 D-1」亦于同轮推翻（见该决策下的「决策变更」）。
 
 ## Implementation Phases
 

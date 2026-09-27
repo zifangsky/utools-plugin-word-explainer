@@ -24,7 +24,7 @@
         {
           "type": "over",
           "label": "单词详解",
-          "exclude": "/[^a-zA-Z]/",
+          "exclude": "/[^a-zA-Z]|^(explain|word|vocabulary)$/i",
           "minLength": 2,
           "maxLength": 100
         }
