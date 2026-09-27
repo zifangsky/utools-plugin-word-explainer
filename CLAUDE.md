@@ -14,6 +14,19 @@ npm run deploy   # 构建 + 复制产物到 public/（uTools 应用商店打包�
 npm test         # 运行 149 个测试 (vitest)
 ```
 
+> **⚠️ 修改 `public/plugin.json` 后必须重新「接入开发」**
+>
+> uTools 只在「接入开发 / 安装（开发模式）」时读取 `plugin.json` 中声明的指令
+> （功能指令、匹配指令、`tools`）。`npm run dev` 仅热更新**前端代码**，
+> **不会**重新注册指令。
+>
+> 因此改了 `plugin.json` 却未重新接入，会出现「指令已写好、前端也正常，但主搜索框匹配不到
+> 本插件」的假象。处置：uTools 开发者工具中对本项目重新「接入开发」（或先
+> 「卸载（开发模式）」再接入）；仍不生效则完全退出 uTools 后重启再试。
+>
+> 另注：`public/` 是 uTools 实际加载的目录，`dist/` 是 `vite build` 产物（构建时会把 `public/`
+> 的内容一并拷入）。**`plugin.json` 的唯一源是 `public/plugin.json`**，不要改 `dist/` 下的副本。
+
 ## 架构概述
 
 ```

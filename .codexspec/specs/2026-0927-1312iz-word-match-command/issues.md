@@ -27,6 +27,33 @@
 
 ---
 
+## Issue: 匹配指令在真实 uTools 中未生效（根因已定位，待重新「接入开发」）
+
+- **Task**: 5.2、5.3（首次复验失败，非实现缺陷）
+- **现象**: 在主搜索框输入单个英文单词（如 `requirements`），候补列表中未出现「单词详解」。
+- **根因**: **uTools 只在「接入开发 / 安装（开发模式）」时读取 `plugin.json` 中声明的指令。**
+  `npm run dev` 仅热更新**前端代码**，不会重新注册指令；改完 `plugin.json` 而未重新接入，
+  就会出现「配置正确 + 前端正常 + `npm test` 全绿，但搜索框匹配不到」的假象。
+- **证据链**（非推测，均可复现）:
+  1. uTools 数据库中记录本插件为开发模式：
+     `{"value":"E:\\Claude_Code\\utools-plugins\\...word-explainer\\public\\plugin.json",
+     "_id":"developer/fff29a109556969ec30c2459cb7aef48/ztwpfbsl"}`（`_rev: 11-...`）；
+     `public/` 下仅有一个 `.json`，即 `plugin.json`，故加载目标无歧义。
+  2. 对 uTools 全量数据检索 `explain-word` 与 `单词详解` → **零命中**；而 uTools 确实会缓存
+     feature 列表（如 `{"pluginId":"a2478731","code":"Ctool","cmds":[...]}`）→ 新 feature 未被注册。
+  3. 官方文档「调试插件应用」(`basic/debug-plugin.html`) 仅承诺「每次进入插件应用加载最新**代码**」，
+     「进阶（代码热更新）」亦只针对入口文件 URL，均未涵盖 `plugin.json` 的指令注册。
+  4. `public/plugin.json` 本身经逐字段比对官方示例确认写法正确（含 `match` 需带前后斜杠、
+     匹配指令需独立成 feature），正则对 12 组输入判定与 spec REQ-001 期望逐条一致。
+- **处置**: 在 uTools 开发者工具中对本项目重新「**接入开发**」（或先「卸载（开发模式）」再接入）；
+  仍不生效则完全退出 uTools 后重启再试。该约束已补入 `CLAUDE.md`，防止再次误判。
+- **Status**: **Needs Action → 待用户执行后复验**
+  - 前置条件就绪：Vite dev server 运行中（`localhost:5173` HTTP 200）。
+  - 复验步骤见 `tasks.md` 的 5.2 / 5.3 / 5.4。
+  - 复验通过后由 AI 承接：回写 OPEN-001 结论 → 执行 Task 6.2（创建 PR）。
+
+---
+
 ## 未纳入本文件的事项
 
 以下项为已识别的非缺陷建议，已在对应产物中书面记录理由，不构成待办阻塞：
