@@ -1,6 +1,25 @@
 <!--
 SYNC IMPACT REPORT
 ==================
+Version: 1.1.0 → 1.1.1
+Bump Rationale: PATCH — 非语义修正。原则 6 中的测试计数从陈旧的 135 更正为实测值 141，使原则 6「文档中的测试计数 MUST 与实际一致」这一自指要求不再自相矛盾（原则 2 已记为 141）。无原则增删或重定义。
+
+Changes:
+- Modified: 原则 6「文档与代码同步」——测试计数 135 → 141（对齐原则 2 与实测 `npm test` = 141 passed）
+- Modified: 顶部版本号 1.1.0 → 1.1.1；最后修订日期 2026-07-07 → 2026-09-27
+
+Template Consistency Check:
+- .codexspec/templates/docs/tasks-template-simple.md: ✅ aligned（无计数引用）
+- .codexspec/templates/docs/tasks-template-detailed.md: ✅ aligned（无计数引用）
+- CLAUDE.md: ✅ aligned（第 14 行「运行 141 个测试」与实际一致）
+- README.md: ✅ aligned（「Vitest 4 + Testing Library (141 个测试)」与实际一致）
+- 上一版报告中关于「.codexspec/ 被 .gitignore 的 `.*/` 规则忽略」的 TODO 已过期：.gitignore 现已显式放行 `.codexspec/` 与 `.codexspec/**`，宪法可随仓库版本化。
+
+Deferred TODOs:
+- TODO(USER): 移除上一版遗留的「是否将 .codexspec/ 放行」TODO——该问题已由 .gitignore 显式覆盖规则解决。
+
+---
+历史记录 (Historical)
 Version: 1.0.0 → 1.1.0
 Bump Rationale: MINOR — 新增原则 8「强制严格 TDD（测试驱动开发）」，将测试先行上升为不可妥协的
 开发必经流程：所有生产代码 MUST 先 RED（编写失败测试）后 GREEN（最小实现）。同步强化原则 2 交叉引用。
@@ -102,7 +121,7 @@ Changes:
 
 - 新增 `src/<module>/` 或新增测试后，MUST 同步更新 `CLAUDE.md`（架构图树形结构、依赖方向、
   存储说明）与 `README.md`（项目结构树、测试计数）。
-- 文档中的测试计数 MUST 与实际 `npm test` 通过数一致（当前 **135**），MUST NOT 出现数字脱节。
+- 文档中的测试计数 MUST 与实际 `npm test` 通过数一致（当前 **141**），MUST NOT 出现数字脱节。
 - 版本发布说明 MUST 记录于 `releases/vX.Y.Z.md`，插件介绍于 `releases/plugin-intro.md`。
 - 涉及构建流程变更时 MUST 同步 `package.json` 与 `.gitignore` 的构建产物路径。
 - 理由：历史上 CLAUDE.md/README.md 曾滞后（「58 个测试」实为 86），同步规则避免误导。
@@ -227,4 +246,4 @@ Changes:
 - **冲突处理**：用户请求与宪法冲突时，MUST 停止并说明违反的原则，提出合规替代方案，须用户显式确认方可覆盖。
 - **所有 PR / 审查 MUST 验证合规**。
 
-**版本**: 1.1.0 | **批准日期**: 2026-07-06 | **最后修订**: 2026-07-07
+**版本**: 1.1.1 | **批准日期**: 2026-07-06 | **最后修订**: 2026-09-27

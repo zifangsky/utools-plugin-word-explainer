@@ -357,3 +357,66 @@ describe('MainPage 历史面板', () => {
     expect(screen.getByPlaceholderText('输入英文单词...')).not.toBeNull()
   })
 })
+
+describe('MainPage 匹配指令进入', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setupWindowUtools()
+    getPreferredModel.mockReturnValue(null)
+  })
+
+  const regexAction = (payload) => ({ code: 'explain-word', type: 'regex', payload })
+
+  it('匹配指令进入 → 输入框预填该单词并自动发起查询', () => {
+    const query = vi.fn()
+    setupUseWordQuery({ query })
+
+    render(<MainPage enterAction={regexAction('ephemeral')} />)
+
+    expect(screen.getByPlaceholderText('输入英文单词...')).toHaveValue('ephemeral')
+    expect(query).toHaveBeenCalledTimes(1)
+    expect(query).toHaveBeenCalledWith('ephemeral', undefined)
+  })
+
+  it('自动查询使用已保存的模型偏好', () => {
+    const query = vi.fn()
+    setupUseWordQuery({ query })
+    getPreferredModel.mockReturnValue('model-x')
+
+    render(<MainPage enterAction={regexAction('serendipity')} />)
+
+    expect(query).toHaveBeenCalledWith('serendipity', 'model-x')
+  })
+
+  it('匹配数据为空 → 不发查询', () => {
+    const query = vi.fn()
+    setupUseWordQuery({ query })
+
+    render(<MainPage enterAction={regexAction('')} />)
+
+    expect(query).not.toHaveBeenCalled()
+  })
+
+  it('功能指令进入 → 不自动查询且输入框为空', () => {
+    const query = vi.fn()
+    setupUseWordQuery({ query })
+
+    render(<MainPage enterAction={{ code: 'explain', type: 'text', payload: '查词' }} />)
+
+    expect(query).not.toHaveBeenCalled()
+    expect(screen.getByPlaceholderText('输入英文单词...')).toHaveValue('')
+  })
+
+  it('重复进入 → 以新的匹配数据再次查询', () => {
+    const query = vi.fn()
+    setupUseWordQuery({ query })
+
+    const { rerender } = render(<MainPage enterAction={regexAction('alpha')} />)
+    expect(query).toHaveBeenLastCalledWith('alpha', undefined)
+
+    rerender(<MainPage enterAction={regexAction('beta')} />)
+
+    expect(query).toHaveBeenLastCalledWith('beta', undefined)
+    expect(query).toHaveBeenCalledTimes(2)
+  })
+})

@@ -15,6 +15,19 @@
         "word",
         "vocabulary"
       ]
+    },
+    {
+      "code": "explain-word",
+      "explain": "匹配指令 — 主输入框为单个英文单词时，直接进入插件查询该单词",
+      "cmds": [
+        {
+          "type": "regex",
+          "label": "单词详解",
+          "match": "/^[a-zA-Z]+$/",
+          "minLength": 1,
+          "maxLength": 64
+        }
+      ]
     }
   ],
   "tools": {

@@ -39,7 +39,7 @@ function BackIcon () {
 }
 
 // 尝试导入 HistoryView，如果失败会在这里抛出
-export default function MainPage () {
+export default function MainPage ({ enterAction }) {
   const [word, setWord] = useState('')
   const { loading, error, result, query } = useWordQuery()
   const [currentView, setCurrentView] = useState(VIEW_MAIN)
@@ -60,6 +60,13 @@ export default function MainPage () {
       }).catch(() => {})
     }
   }, [])
+
+  // 经匹配指令进入时，预填该单词并自动查询
+  useEffect(() => {
+    if (!enterAction || enterAction.type !== 'regex' || !enterAction.payload) return
+    setWord(enterAction.payload)
+    query(enterAction.payload, getPreferredModel() || undefined)
+  }, [enterAction])
 
   const handleQuery = () => {
     const trimmed = word.trim()

@@ -11,7 +11,7 @@ React + Vite 工程，在 uTools 平台中运行的桌面插件。用户输入�
 npm run dev      # 启动开发服务器 (localhost:5173)
 npm run build    # 生产构建到 dist/
 npm run deploy   # 构建 + 复制产物到 public/（uTools 应用商店打包用）
-npm test         # 运行 141 个测试 (vitest)
+npm test         # 运行 149 个测试 (vitest)
 ```
 
 ## 架构概述
@@ -21,6 +21,7 @@ src/
 ├── main.jsx                    # React 入口
 ├── main.css                    # 全局样式
 ├── App.jsx                     # 根组件 — utools 生命周期 (onPluginEnter/Out)
+├── App.test.jsx                # 根组件测试 — 进入动作 (action) 透传
 ├── main-page/
 │   ├── index.jsx               # 主界面 + 设置面板 + 查词历史视图切换 (编排组件)
 │   └── index.css               # 布局、按钮、结果区、暗色模式

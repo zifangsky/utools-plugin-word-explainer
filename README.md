@@ -6,7 +6,11 @@
 
 在 uTools 搜索框中输入以下任意关键词进入插件：
 
+**功能指令** — 在 uTools 搜索框中输入以下任意关键词进入插件：
+
 - `explain` / `查词` / `word` / `vocabulary`
+
+**匹配指令** — 主输入框内容为单个英文单词（仅字母）时，候选中出现「单词详解」；选中后自动预填并查询该单词。复制一个单词后直接呼出 uTools 即可使用。
 
 ## 开发
 
@@ -39,6 +43,7 @@ npm run deploy
 ```
 src/
 ├── App.jsx                     # 根组件
+├── App.test.jsx                # 根组件测试（进入动作透传）
 ├── main-page/                   # 主界面 + 设置面板
 ├── prompt-template/            # 7 板块提示词模板
 ├── ai-call/                    # AI 调用封装（流式）
@@ -61,7 +66,7 @@ public/
 
 ## 技术栈
 
-- Vitest 4 + Testing Library (141 个测试)
+- Vitest 4 + Testing Library (149 个测试)
 - uTools AI API（流式调用）
 - uTools dbStorage（偏好持久化）
 - uTools MCP Tools（registerTool）
