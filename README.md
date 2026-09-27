@@ -24,12 +24,22 @@ npm run dev
 # 运行测试
 npm test
 
-# 生产构建
+# 生产构建 → dist/（构建前自动清空 public/ 下的历史产物）
 npm run build
 
-# 构建并复制到 public/（uTools 应用商店打包用）
+# 构建并复制产物到 public/（开发模式本地安装用）
 npm run deploy
 ```
+
+发布到 uTools 插件市场：
+
+1. 执行 `npm run build`
+2. 在 uTools 开发者工具中点击「发布」→ 选择 **`dist/`** 目录（`plugin.json` 及全部运行资源所在处）
+3. 填写版本号、版本说明、插件介绍与截图，提交审核
+
+> `dist/` 由 `vite build` 生成，内容为构建产物 + 从 `public/` 拷入的 `plugin.json` / `logo.png` / `preload/`。
+> 构建前会先清空 `public/assets` 与 `public/index.html`，避免历史产物被 Vite 的 `copyPublicDir`
+> 回灌进发布目录。
 
 开发流程：
 1. 本地修改代码后，启动开发服务器 `npm run dev`
@@ -63,6 +73,7 @@ public/
 ├── logo.png                    # uTools 插件 Logo（运行时）
 ├── plugin.json                 # 插件配置
 └── preload/                    # Node.js preload 脚本
+dist/                           # 生产构建产物（发布到 uTools 插件市场时选择该目录）
 ```
 
 ## 技术栈

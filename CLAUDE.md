@@ -9,10 +9,22 @@ React + Vite 工程，在 uTools 平台中运行的桌面插件。用户输入�
 
 ```bash
 npm run dev      # 启动开发服务器 (localhost:5173) — 只提供前端代码，不注册指令
-npm run build    # 生产构建到 dist/
-npm run deploy   # 构建 + 复制产物到 public/（uTools 应用商店打包用）
+npm run build    # 生产构建到 dist/ — uTools「发布」时选择该目录
+npm run deploy   # 构建 + 复制产物到 public/（开发模式本地安装用）
 npm test         # 运行 227 个测试 (vitest)
 ```
+
+> **⚠️ 发布目录是 `dist/`，不是 `public/`**（2026-09-27 实测确认）：uTools 开发者工具
+> 「发布 → 打包该文件夹下所有文件」默认指向 `dist/`。`dist/` 的内容 = `vite build` 产物
+> （`index.html` + `assets/`）+ `copyPublicDir` 拷入的 `plugin.json` / `logo.png` / `preload/`。
+>
+> **`prebuild` 清空机制（防产物污染）**：`vite build` 会把 `public/` 整体拷进 `dist/`
+> （Vite 的 `copyPublicDir` 默认行为）。若 `public/assets/` 里残留历史构建产物，就会被
+> **回灌进发布目录 `dist/`**，使发布包带上全部历史 hash 包。故 `package.json` 增设
+> `prebuild: rm -rf public/assets public/index.html`，让 `npm run build` / `npm run deploy`
+> 起步即清空这两个生成物（二者均属 `.gitignore` 中的构建产物，非源码）。
+> **`deploy` MUST 经 `npm run build` 调用**（不可直接写 `vite build`），否则 `prebuild`
+> 生命周期不触发、清空失效。
 
 > **⚠️ 改了 `public/plugin.json` 后：在 uTools 开发者工具中「卸载（开发模式）」再重新安装**
 >
