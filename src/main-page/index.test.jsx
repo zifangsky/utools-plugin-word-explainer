@@ -8,7 +8,9 @@ import { getPreferredModel, setPreferredModel } from '../model-preference/index.
 import { setSaveQueryHistory } from '../history-preference/index.js'
 import { syncToFlomo, getFlomoApiEndpoint, getFlomoTags } from '../sync/index.js'
 
-vi.mock('../use-word-query/index.js', () => ({
+// 保留真实的 normalizeWord（归一化契约由主界面与 Hook 共用），仅替掉 Hook
+vi.mock('../use-word-query/index.js', async (importOriginal) => ({
+  ...(await importOriginal()),
   useWordQuery: vi.fn()
 }))
 
@@ -469,5 +471,158 @@ describe('MainPage 匹配指令进入', () => {
 
     expect(query).toHaveBeenCalledTimes(1)
     expect(getPreferredModel).toHaveBeenCalledTimes(1)
+  })
+
+  it('匹配指令传入首字母大写单词 → 归一化为小写后查询', () => {
+    const query = vi.fn()
+    setupUseWordQuery({ query })
+
+    render(<MainPage enterAction={overAction('Hello')} />)
+
+    expect(query).toHaveBeenCalledWith('hello', undefined)
+    expect(screen.getByPlaceholderText('输入英文单词...')).toHaveValue('hello')
+  })
+})
+
+describe('MainPage 输入归一化', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setupUseWordQuery()
+    setupWindowUtools()
+  })
+
+  it('点击查询 → 转小写并去除首尾空格，输入框同步显示归一化结果', () => {
+    const query = vi.fn()
+    setupUseWordQuery({ query })
+
+    render(<MainPage />)
+    const input = screen.getByPlaceholderText('输入英文单词...')
+    fireEvent.change(input, { target: { value: '  Hello  ' } })
+    fireEvent.click(screen.getByText('查询'))
+
+    expect(query).toHaveBeenCalledWith('hello', undefined)
+    expect(input).toHaveValue('hello')
+  })
+
+  it('按 Enter 查询同样归一化', () => {
+    const query = vi.fn()
+    setupUseWordQuery({ query })
+
+    render(<MainPage />)
+    const input = screen.getByPlaceholderText('输入英文单词...')
+    fireEvent.change(input, { target: { value: 'Ephemeral ' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+
+    expect(query).toHaveBeenCalledWith('ephemeral', undefined)
+    expect(input).toHaveValue('ephemeral')
+  })
+
+  it('仅空格的输入不触发查询', () => {
+    const query = vi.fn()
+    setupUseWordQuery({ query })
+
+    render(<MainPage />)
+    fireEvent.change(screen.getByPlaceholderText('输入英文单词...'), { target: { value: '   ' } })
+    fireEvent.click(screen.getByText('查询'))
+
+    expect(query).not.toHaveBeenCalled()
+  })
+})
+
+describe('MainPage 朗读单词', () => {
+  const RESULT = '**ephemeral** /ɪˈfemərəl/ (英) /ɪˈfemərəl/ (美)\n\n---\n\n**1、词义解析**\n\n内容'
+  let synth
+  let spoken
+
+  function setupSpeech () {
+    spoken = []
+    globalThis.SpeechSynthesisUtterance = class {
+      constructor (text) {
+        this.text = text
+        spoken.push(this)
+      }
+    }
+    synth = { speak: vi.fn(), cancel: vi.fn() }
+    globalThis.window = { ...globalThis.window, speechSynthesis: synth }
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setupUseWordQuery()
+    setupWindowUtools()
+    setupSpeech()
+  })
+
+  it('朗读按钮内联在音标行（首个段落）末尾', () => {
+    setupUseWordQuery({ result: RESULT })
+
+    const { container } = render(<MainPage />)
+    const btn = screen.getByTestId('result-play-btn')
+    const firstParagraph = container.querySelector('.md-paragraph')
+
+    expect(firstParagraph.contains(btn)).toBe(true)
+    expect(firstParagraph.textContent).toContain('ɪˈfemərəl')
+  })
+
+  it('无查询结果时不渲染朗读按钮', () => {
+    setupUseWordQuery({ result: '' })
+
+    render(<MainPage />)
+    expect(screen.queryByTestId('result-play-btn')).not.toBeInTheDocument()
+  })
+
+  it('流式输出中音标行已渲染即可朗读', () => {
+    setupUseWordQuery({ loading: true, result: RESULT })
+
+    render(<MainPage />)
+    expect(screen.getByTestId('result-play-btn')).toBeInTheDocument()
+  })
+
+  it('点击朗读 → 以查询的单词朗读', () => {
+    const query = vi.fn()
+    setupUseWordQuery({ query, result: RESULT })
+
+    render(<MainPage />)
+    fireEvent.change(screen.getByPlaceholderText('输入英文单词...'), { target: { value: 'ephemeral' } })
+    fireEvent.click(screen.getByText('查询'))
+    fireEvent.click(screen.getByTestId('result-play-btn'))
+
+    expect(spoken.length).toBe(1)
+    expect(spoken[0].text).toBe('ephemeral')
+    expect(spoken[0].lang).toBe('en-US')
+    expect(synth.speak).toHaveBeenCalled()
+  })
+
+  it('查询后改写输入框不影响朗读对象（仍读结果对应的单词）', () => {
+    const query = vi.fn()
+    setupUseWordQuery({ query, result: RESULT })
+
+    render(<MainPage />)
+    const input = screen.getByPlaceholderText('输入英文单词...')
+    fireEvent.change(input, { target: { value: 'ephemeral' } })
+    fireEvent.click(screen.getByText('查询'))
+
+    // 未再次查询，仅改写输入框
+    fireEvent.change(input, { target: { value: 'hello' } })
+    fireEvent.click(screen.getByTestId('result-play-btn'))
+
+    expect(spoken[0].text).toBe('ephemeral')
+  })
+
+  it('非法单词的查询不改变朗读对象（仍读结果对应的单词）', () => {
+    const query = vi.fn()
+    setupUseWordQuery({ query, result: RESULT })
+
+    render(<MainPage />)
+    const input = screen.getByPlaceholderText('输入英文单词...')
+    fireEvent.change(input, { target: { value: 'ephemeral' } })
+    fireEvent.click(screen.getByText('查询'))
+
+    // 非法输入被 Hook 拒绝，屏幕结果未更新 → 朗读对象应保持上一次查询的单词
+    fireEvent.change(input, { target: { value: 'hello world' } })
+    fireEvent.click(screen.getByText('查询'))
+    fireEvent.click(screen.getByTestId('result-play-btn'))
+
+    expect(spoken[0].text).toBe('ephemeral')
   })
 })

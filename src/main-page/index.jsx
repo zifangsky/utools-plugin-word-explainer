@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
-import { useWordQuery } from '../use-word-query/index.js'
+import { useState, useEffect, useMemo, useRef } from 'react'
+import { useWordQuery, normalizeWord, validateWord } from '../use-word-query/index.js'
+import { useWordAudio } from '../word-audio/index.js'
 import { MarkdownView } from '../markdown-view/index.jsx'
 import { HistoryView } from '../history-view/index.jsx'
 import { getPreferredModel, setPreferredModel } from '../model-preference/index.js'
@@ -49,9 +50,12 @@ export default function MainPage ({ enterAction }) {
   const [endpoint, setEndpoint] = useState(() => getFlomoApiEndpoint())
   const [tags, setTags] = useState('')
   const { syncStatus, syncMessage, handleSync } = useFlomoSync(word, result)
+  const { playingWord, play } = useWordAudio()
 
   // 模型偏好只读一次：dbStorage 读取是同步 IPC，主界面挂载阶段需避免重复阻塞
   const preferredModelRef = useRef(null)
+  // 朗读对象 = 最近一次发起查询的单词（查询后改写输入框时仍朗读结果对应的单词）
+  const queriedWordRef = useRef('')
 
   useEffect(() => {
     const preferred = getPreferredModel()
@@ -75,15 +79,34 @@ export default function MainPage ({ enterAction }) {
   // 经匹配指令（over 型）进入时，预填该单词并自动查询
   useEffect(() => {
     if (!enterAction || enterAction.type !== 'over' || !enterAction.payload) return
-    setWord(enterAction.payload)
-    query(enterAction.payload, preferredModelRef.current || undefined)
+    const normalized = normalizeWord(enterAction.payload)
+    if (!normalized) return
+    setWord(normalized)
+    queriedWordRef.current = normalized
+    query(normalized, preferredModelRef.current || undefined)
   }, [enterAction])
 
   const handleQuery = () => {
-    const trimmed = word.trim()
-    if (!trimmed) return
-    query(trimmed, selectedModel || undefined)
+    const normalized = normalizeWord(word)
+    if (!normalized) return
+    setWord(normalized)
+    // 非法输入由 query 统一给出提示；此处不更新朗读对象，避免旧结果被读成非法文本
+    if (!validateWord(normalized)) queriedWordRef.current = normalized
+    query(normalized, selectedModel || undefined)
   }
+
+  // 朗读按钮内联在结果首行（单词 + 音标）末尾；元素身份保持稳定，
+  // 避免每次键入都让 MarkdownView 重解析全文
+  const playButton = useMemo(() => (
+    <button
+      className={`result-play-btn${playingWord ? ' playing' : ''}`}
+      title='播放读音'
+      onClick={(e) => play(queriedWordRef.current, e)}
+      data-testid='result-play-btn'
+    >
+      ▶
+    </button>
+  ), [playingWord, play])
 
   const handleModelChange = (modelId) => {
     setSelectedModel(modelId)
@@ -205,7 +228,7 @@ export default function MainPage ({ enterAction }) {
         {result && !loading && !error && (
           <div className='result-with-actions'>
             <div className='result-content'>
-              <MarkdownView content={result} />
+              <MarkdownView content={result} firstParagraphTrailing={playButton} />
             </div>
             <div className='result-actions'>
               {endpoint && (
@@ -233,7 +256,7 @@ export default function MainPage ({ enterAction }) {
         )}
         {result && (loading || error) && (
           <div className='result-content'>
-            <MarkdownView content={result} />
+            <MarkdownView content={result} firstParagraphTrailing={playButton} />
           </div>
         )}
       </div>

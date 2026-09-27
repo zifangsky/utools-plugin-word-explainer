@@ -326,3 +326,50 @@ describe('HistoryView flomo 同步', () => {
     expect(btn).toHaveClass('idle')
   })
 })
+
+describe('HistoryView 朗读单词', () => {
+  let synth
+  let spoken
+
+  beforeEach(() => {
+    spoken = []
+    globalThis.SpeechSynthesisUtterance = class {
+      constructor (text) {
+        this.text = text
+        spoken.push(this)
+      }
+    }
+    synth = { speak: vi.fn(), cancel: vi.fn() }
+    globalThis.window = { ...globalThis.window, speechSynthesis: synth }
+  })
+
+  it('点击卡片朗读按钮 → 朗读该单词且不触发卡片选中', () => {
+    render(<HistoryView />)
+
+    const card = screen.getByText('hello').closest('[data-selected]')
+    fireEvent.click(screen.getAllByTestId('history-card-play')[0])
+
+    expect(spoken.length).toBe(1)
+    expect(spoken[0].text).toBe('hello')
+    expect(spoken[0].lang).toBe('en-US')
+    expect(synth.speak).toHaveBeenCalled()
+    expect(card.getAttribute('data-selected')).toBe('false')
+  })
+
+  it('朗读开始后按钮进入 playing 态，结束后复位', () => {
+    render(<HistoryView />)
+    fireEvent.click(screen.getAllByTestId('history-card-play')[0])
+
+    expect(screen.getAllByTestId('history-card-play')[0]).not.toHaveClass('playing')
+
+    act(() => {
+      spoken[0].onstart()
+    })
+    expect(screen.getAllByTestId('history-card-play')[0]).toHaveClass('playing')
+
+    act(() => {
+      spoken[0].onend()
+    })
+    expect(screen.getAllByTestId('history-card-play')[0]).not.toHaveClass('playing')
+  })
+})

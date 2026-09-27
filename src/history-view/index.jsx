@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
-/* global SpeechSynthesisUtterance */
 import { getHistoryRecords, getDetailRecord, deleteQueryRecords } from '../query-history/index.js'
 import { MarkdownView } from '../markdown-view/index.jsx'
+import { useWordAudio } from '../word-audio/index.js'
 import { useFlomoSync } from '../sync/useFlomoSync.js'
 import flomoIcon from '../../assets/flomo_favicon.ico'
 import './index.css'
@@ -39,11 +39,11 @@ export function HistoryView () {
   const [selectedId, setSelectedId] = useState(null)
   const [detailContent, setDetailContent] = useState(null)
   const [loadingDetail, setLoadingDetail] = useState(false)
-  const [playingWord, setPlayingWord] = useState(null)
   const [selectedIds, setSelectedIds] = useState(() => new Set())
   const [selectedWord, setSelectedWord] = useState('')
   const [deleteConfirming, setDeleteConfirming] = useState(false)
   const { endpoint, syncStatus, syncMessage, handleSync, resetSync } = useFlomoSync(selectedWord, detailContent)
+  const { playingWord, play } = useWordAudio()
 
   // 加载记录
   useEffect(() => {
@@ -88,18 +88,6 @@ export function HistoryView () {
       setDetailContent(doc.content)
     }
     setLoadingDetail(false)
-  }, [])
-
-  const handlePlay = useCallback((word, e) => {
-    e.stopPropagation()
-    if (!window.speechSynthesis) return
-    const utterance = new SpeechSynthesisUtterance(word)
-    utterance.lang = 'en-US'
-    utterance.onstart = () => setPlayingWord(word)
-    utterance.onend = () => setPlayingWord(null)
-    utterance.onerror = () => setPlayingWord(null)
-    window.speechSynthesis.cancel()
-    window.speechSynthesis.speak(utterance)
   }, [])
 
   // 勾选/取消单个卡片
@@ -199,7 +187,7 @@ export function HistoryView () {
                 <button
                   className={`history-card-play ${playingWord === rec.word ? 'playing' : ''}`}
                   title='播放读音'
-                  onClick={(e) => handlePlay(rec.word, e)}
+                  onClick={(e) => play(rec.word, e)}
                   data-testid='history-card-play'
                 >
                   ▶

@@ -1,6 +1,90 @@
 <!--
 SYNC IMPACT REPORT
 ==================
+Version: 1.2.0 → 1.2.1
+Bump Rationale: PATCH — 输入校验失败时的可观察行为修正。原则 3 补充「校验不通过 MUST 清空上一次的查询结果」，属既有「MUST 向用户给出提示」条款的配套细化（避免错误提示与不相关的旧结果同屏），未新增或收窄可接受输入集、未增删原则与章节，故取 PATCH。同时把原则 2 / 原则 6 的测试计数更新为实测值 227（本次新增 2 条：1 条行为修正、1 条区分两类 error 的回归锁）。
+
+Changes:
+- Modified: 原则 3「领域边界不可逾越」——校验不通过时补「MUST 清空上一次的查询结果」
+- Modified: 原则 2「行为驱动测试」——测试基准 225 → 227
+- Modified: 原则 6「文档与代码同步」——文档测试计数引用 225 → 227
+- Modified: 顶部版本号 1.2.0 → 1.2.1；底部版本行同步；最后修订 2026-09-27
+
+Template Consistency Check:
+- .codexspec/templates/docs/tasks-template-simple.md: ✅ aligned（无计数引用）
+- .codexspec/templates/docs/tasks-template-detailed.md: ✅ aligned（无计数引用）
+- CLAUDE.md: ✅ aligned（「运行 227 个测试」与实际一致）
+- README.md: ✅ aligned（「Vitest 4 + Testing Library (227 个测试)」与实际一致）
+
+Deferred TODOs:
+- （无）
+
+---
+
+历史记录 (Historical)
+Version: 1.1.5 → 1.2.0
+Bump Rationale: MINOR — 原则 3「领域边界不可逾越」的可接受输入集发生实质变更：首页手输由「仅英文字母」放宽为「英文字母 + 连字符 + 撇号」（`well-known`、`don't`），并首次明确两条入口的口径分叉（匹配指令路径保持纯字母，受 uTools `over` 型选择器约束）。依治理条款「MINOR = 新增原则或章节或实质性扩展」，本次为绑定约束的范围变更而非措辞澄清，故取 MINOR。同时把原则 2 / 原则 6 的测试计数更新为实测值 225（本次新增 7 条输入校验用例），并修正上一版遗漏的底部版本行。
+
+Changes:
+- Modified: 原则 3「领域边界不可逾越」——输入字符集按入口分叉（首页含连字符 / 撇号且至少含一个字母；匹配指令保持纯字母）
+- Modified: 原则 2「行为驱动测试」——测试基准 218 → 225
+- Modified: 原则 6「文档与代码同步」——文档测试计数引用 218 → 225
+- Fixed: 底部版本行由 1.1.4 补正为 1.2.0（上一版 1.1.4 → 1.1.5 时遗漏该行同步）
+- Modified: 顶部版本号 1.1.5 → 1.2.0；最后修订 2026-09-27
+
+Template Consistency Check:
+- .codexspec/templates/docs/tasks-template-simple.md: ✅ aligned（无计数引用）
+- .codexspec/templates/docs/tasks-template-detailed.md: ✅ aligned（无计数引用）
+- CLAUDE.md: ✅ aligned（「运行 225 个测试」与实际一致）
+- README.md: ✅ aligned（「Vitest 4 + Testing Library (225 个测试)」与实际一致）
+
+Deferred TODOs:
+- （无）
+
+---
+
+历史记录 (Historical)
+Version: 1.1.4 → 1.1.5
+Bump Rationale: PATCH — 非语义修正。原则 2 与原则 6 中的测试计数从 197 更正为实测值 218（新增 `src/use-word-query/index.test.js` 输入校验用例与 `src/main-page/index.test.jsx` 朗读对象回归用例，共 21 条），并将「安全要求」中既有的「查词输入 MUST 校验为合法英文单词」条款落到实现（原则 3 同步补充校验语义）。无原则增删或重定义。
+
+Changes:
+- Modified: 原则 2「行为驱动测试」——测试基准 197 → 218
+- Modified: 原则 3「领域边界不可逾越」——补充输入校验语义（仅英文字母、长度 ≤ 100；非法输入 MUST NOT 调用 AI）
+- Modified: 原则 6「文档与代码同步」——文档测试计数引用 197 → 218
+- Modified: 顶部版本号 1.1.4 → 1.1.5；最后修订 2026-09-27
+
+Template Consistency Check:
+- .codexspec/templates/docs/tasks-template-simple.md: ✅ aligned（无计数引用）
+- .codexspec/templates/docs/tasks-template-detailed.md: ✅ aligned（无计数引用）
+- CLAUDE.md: ✅ aligned（「运行 218 个测试」与实际一致）
+- README.md: ✅ aligned（「Vitest 4 + Testing Library (218 个测试)」与实际一致）
+
+Deferred TODOs:
+- （无）
+
+---
+
+历史记录 (Historical)
+Version: 1.1.3 → 1.1.4
+Bump Rationale: PATCH — 非语义修正。原则 2 与原则 6 中的测试计数从 173 更正为实测值 197（新增 `src/word-audio/index.test.js` 等 24 条测试，覆盖输入归一化与单词朗读），并同步 Template Consistency Check 中的文档一致性判断。无原则增删或重定义。
+
+Changes:
+- Modified: 原则 2「行为驱动测试」——测试基准 173 → 197
+- Modified: 原则 6「文档与代码同步」——文档测试计数引用 173 → 197
+- Modified: 顶部版本号 1.1.3 → 1.1.4；最后修订 2026-09-27
+
+Template Consistency Check:
+- .codexspec/templates/docs/tasks-template-simple.md: ✅ aligned（无计数引用）
+- .codexspec/templates/docs/tasks-template-detailed.md: ✅ aligned（无计数引用）
+- CLAUDE.md: ✅ aligned（「运行 197 个测试」与实际一致）
+- README.md: ✅ aligned（「Vitest 4 + Testing Library (197 个测试)」与实际一致）
+
+Deferred TODOs:
+- （无）
+
+---
+
+历史记录 (Historical)
 Version: 1.1.2 → 1.1.3
 Bump Rationale: PATCH — 非语义修正。原则 2 与原则 6 中的测试计数从 154 更正为实测值 173（新增 `src/plugin-manifest.test.js` 的 19 条配置契约测试），并同步 Template Consistency Check 中对 CLAUDE.md / README.md 的一致性判断。无原则增删或重定义。
 
@@ -105,7 +189,7 @@ Changes:
   （`utools.db` / `dbStorage`）的集成测试。
 - 函数签名变更时 MUST 全局搜索所有调用点，并核对 `expect(mockFn).toHaveBeenCalledWith(...)`
   断言覆盖全部参数。
-- 测试基准：当前 **173** 个测试；新增模块时测试数随之增长并在文档同步。
+- 测试基准：当前 **227** 个测试；新增模块时测试数随之增长并在文档同步。
 - 测试顺序遵循原则 8（强制严格 TDD）：MUST 先编写失败测试（RED），再写最小实现（GREEN），
   最后在测试保护下重构（REFACTOR）；MUST NOT 先写实现再补测试。
 - 理由：历史踩坑——`use-word-query` 漏传 `db` 参数，因被测函数被 `vi.fn()` mock 而未执行真实逻辑，
@@ -113,7 +197,7 @@ Changes:
 
 ### 3. 领域边界不可逾越
 
-- 查词输入 MUST 为单个英文单词；MUST NOT 支持短语、句子或中文词汇输入。
+- 查词输入 MUST 为单个英文单词，长度 ≤ 100；**可接受字符集按入口区分**：首页手输允许英文字母、连字符与撇号（`well-known`、`don't`）且 MUST 至少含一个字母，匹配指令路径 MUST 为纯英文字母（受 uTools `over` 型选择器约束）；MUST NOT 支持短语、句子、中文词汇或含数字 / 下划线 / 空格等内容的输入；校验不通过时 MUST NOT 调用 AI，MUST 向用户给出提示，MUST 清空上一次的查询结果（错误提示 MUST NOT 与不相关的旧结果同屏）。
 - 所有单词解释内容 MUST 由 AI（`utools.ai()`）生成；MUST NOT 接入外部词典 API 或本地词库。
 - 仅 UI 查词路径 MUST 记录查词历史；MCP 工具（`explain_word`）调用 MUST NOT 写入查词历史。
 - 7 板块格式（词义解析、词性用法、语境应用、常见搭配、词源故事、记忆技巧、同义词辨析）的
@@ -142,7 +226,7 @@ Changes:
 
 - 新增 `src/<module>/` 或新增测试后，MUST 同步更新 `CLAUDE.md`（架构图树形结构、依赖方向、
   存储说明）与 `README.md`（项目结构树、测试计数）。
-- 文档中的测试计数 MUST 与实际 `npm test` 通过数一致（当前 **173**），MUST NOT 出现数字脱节。
+- 文档中的测试计数 MUST 与实际 `npm test` 通过数一致（当前 **227**），MUST NOT 出现数字脱节。
 - 版本发布说明 MUST 记录于 `releases/vX.Y.Z.md`，插件介绍于 `releases/plugin-intro.md`。
 - 涉及构建流程变更时 MUST 同步 `package.json` 与 `.gitignore` 的构建产物路径。
 - 理由：历史上 CLAUDE.md/README.md 曾滞后（「58 个测试」实为 86），同步规则避免误导。
@@ -270,4 +354,4 @@ Changes:
 - **冲突处理**：用户请求与宪法冲突时，MUST 停止并说明违反的原则，提出合规替代方案，须用户显式确认方可覆盖。
 - **所有 PR / 审查 MUST 验证合规**。
 
-**版本**: 1.1.3 | **批准日期**: 2026-07-06 | **最后修订**: 2026-09-27
+**版本**: 1.2.1 | **批准日期**: 2026-07-06 | **最后修订**: 2026-09-27

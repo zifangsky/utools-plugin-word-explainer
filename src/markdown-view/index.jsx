@@ -99,7 +99,7 @@ function parseBlocks (text) {
   return blocks
 }
 
-export const MarkdownView = memo(function MarkdownView ({ content }) {
+export const MarkdownView = memo(function MarkdownView ({ content, firstParagraphTrailing }) {
   const text = typeof content === 'string' ? content : ''
 
   const elements = useMemo(() => {
@@ -114,14 +114,20 @@ export const MarkdownView = memo(function MarkdownView ({ content }) {
 
         case 'paragraph': {
           const paraText = block.lines.join('\n')
-          return <p key={idx} className='md-paragraph'>{renderInline(paraText)}</p>
+          return (
+            <p key={idx} className='md-paragraph'>
+              {renderInline(paraText)}
+              {/* 附加节点跟随首个段落（单词 + 音标行）渲染在其末尾 */}
+              {idx === 0 && firstParagraphTrailing ? firstParagraphTrailing : null}
+            </p>
+          )
         }
 
         default:
           return null
       }
     })
-  }, [text])
+  }, [text, firstParagraphTrailing])
 
   return <div className='markdown-view'>{elements}</div>
 })
