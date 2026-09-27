@@ -27,13 +27,6 @@
           "match": "/^[a-zA-Z]+$/",
           "minLength": 1,
           "maxLength": 64
-        },
-        {
-          "type": "over",
-          "label": "单词详解（复制即查）",
-          "exclude": "/[^a-zA-Z\\s]/",
-          "minLength": 1,
-          "maxLength": 64
         }
       ]
     }
