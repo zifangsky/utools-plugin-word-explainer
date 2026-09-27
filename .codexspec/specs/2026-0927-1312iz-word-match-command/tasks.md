@@ -49,6 +49,10 @@ Language: zh-CN（与 .codexspec/config.yml 的 language.output 一致）
 
 - [x] 6.1 确认当前分支 `git branch --show-current` ≠ `main`；若在 `main` 则先从 `main` 创建 `feat/word-match-command`。在 `feat/word-match-command` 上提交：实现代码、测试、文档同步、`.codexspec/specs/2026-0927-1312iz-word-match-command/` 全部过程产物、`.codexspec/memory/constitution.md` 的 PATCH 修正。Covers: NFR-002; Plan: 分支与提交
 - [ ] 6.2 创建到 `main` 的 PR，描述中附特性目录链接、spec/plan/tasks 路径、门禁结果与 5.2~5.4 的核验记录。Covers: NFR-002; Plan: 分支与提交（宪法「PR 要求」）
+  - **分支状态（2026-09-27 15:28）**：`feat/word-match-command` 已推送至 `origin`（远端分支新建、
+    上游跟踪已建立），当前 HEAD 为 `b36a6e1`（`docs:` 收尾文档一致性审查）。
+  - **PR 未创建（用户决定）**：用户选择「先补验再提 PR」——待 5.2 的负例集合与 5.4（OPEN-001）
+    实测完成后一并创建，以符合本条「附 5.2~5.4 核验记录」的要求。
 
 ## Dependencies
 
