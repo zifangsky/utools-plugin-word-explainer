@@ -43,17 +43,46 @@ Language: zh-CN（与 .codexspec/config.yml 的 language.output 一致）
 - **Statement**: 匹配范围为单个纯英文单词（仅 `[a-zA-Z]`），MUST NOT 匹配短语、句子或中文内容。
 - **User Evidence**: 项目宪法原则 3「查词输入 MUST 为单个英文单词；MUST NOT 支持短语、句子或中文词汇输入」（supreme authority，不可覆盖）
 
-### CON-002: 匹配类型 MUST 为 `regex`
+### CON-002: 匹配指令 MUST 使用 `over` 类型并配严格 `exclude`
 
-- **Status**: confirmed
-- **Statement**: 指令 MUST 使用 `"type": "regex"`；MUST NOT 使用 `"type": "over"`。
-- **User Evidence**: `over` 会匹配任意文本（含中文与长句），直接违反 CON-001。uTools 官方文档亦指出「任意匹配的正则会被 uTools 忽视」，故需可判别的具体正则。
+- **Status**: confirmed（**2026-09-27 14:36 变更**，原为「MUST 为 `regex`」；理由见「变更记录」）
+- **Statement**: 指令 MUST 使用 `"type": "over"`，且 MUST 配 `exclude` 以排除非纯字母内容
+  （`exclude: "/[^a-zA-Z]/"`）。原约束的前提「`over` 会匹配任意文本（含中文与长句）」在配
+  `exclude` 后**不再成立**：`exclude` 命中的输入被直接排除，故中文（`你好`）、短语
+  （`hello world`）、含数字（`abc123`）、含连字符（`well-known`）的输入均不会命中，
+  **CON-001（仅匹配单个英文单词）仍被完整满足**。已用脚本对 17 组输入逐条核验。
+- **变更理由（实测证据，非推测）**: `regex` 型指令在本项目真实环境中**连续 4 轮从未生效**，
+  而 `over` 型一经配置即生效。判定实验（见 `issues.md` 第 5 轮）：
+
+  | 轮次 | `wordMatch.cmds` | 是否重装 | 候补出现「单词详解」 |
+  |------|-----------------|---------|-------------------|
+  | 第 2 轮 | `regex` 单独 | 重启进程 | 否 |
+  | 第 4 轮 | 字符串 + `regex` + **`over`** | 已重装 | **是** |
+  | 第 5 轮 | 字符串 + `regex`（删 `over`） | 已重装 | **否** |
+
+  第 4 ↔ 5 轮**唯一变量为 `over` 的存删** → `over` 是生效路径，`regex` 非。
+- **User Evidence**: 原约束源自用户对「CON-002: 匹配类型 MUST 为 regex」的确认。
+  2026-09-27 14:35 用户指示「把正则改成 `/[a-zA-Z]+/`，最小/最大字符改为 2/100」以解决
+  匹配不到的问题。本变更**采纳其意图**（让「仅单个英文单词」的匹配真正生效 + 字符数 2~100），
+  但**未采纳其具体形式**，两项理由：
+  1. `regex` 型已确证不生效，修改其 `match` 内容无法解决「匹配不到」；
+  2. 去掉 `^` `$` 后的 `/[a-zA-Z]+/` 为 search 语义（子串匹配），`hello world`、`abc123`
+     均会命中，直接违反 CON-001。改用 `over` + `exclude: "/[^a-zA-Z]/"` 实现同一意图，
+     语义上比原 `^...$` 更严格（后者的 exclude 版本连空格都排除）。
+
+### CON-002-SUPERSEDED: ~~匹配类型 MUST 为 `regex`~~（已由 CON-002 取代）
+
+- **Statement（历史）**: 指令 MUST 使用 `"type": "regex"`；MUST NOT 使用 `"type": "over"`。
+- **原理由（历史）**: `over` 会匹配任意文本（含中文与长句），直接违反 CON-001。
+- **失效说明**: 该理由的前提是 `over` **不配 `exclude`**。配 `exclude: "/[^a-zA-Z]/"` 后，
+  `over` 的可观察行为等价于 `^[a-zA-Z]+$`，且 CON-001 经脚本逐条核验仍成立。
+  加之 `regex` 型在真机 4 轮从未生效（实证），故本约束已由 CON-002 取代。
 
 ### CON-003: 配置载体为 `public/plugin.json`
 
-- **Status**: confirmed
-- **Statement**: 匹配指令 MUST 配置在 `public/plugin.json` 的 `features[].cmds[]` 中。`cmds` 元素为对象形式 `{type, label, match, minLength, maxLength}`，`match` 为带斜杠与 flag 的字符串（JSON 中反斜杠需双写）。
-- **User Evidence**: uTools 官方文档「plugin.json 核心配置文件说明 → 匹配指令 / feature.cmds」；进入插件时 `onPluginEnter` 回调收到 `{code, type, payload}`，`type` 为 `regex` 时 `payload` 为匹配到的文本。
+- **Status**: confirmed（2026-09-27 14:36 字段形态随 CON-002 变更同步）
+- **Statement**: 匹配指令 MUST 配置在 `public/plugin.json` 的 `features[].cmds[]` 中。`cmds` 元素为对象形式：`regex` 型用 `{type, label, match, minLength, maxLength}`，`over` 型用 `{type, label, exclude, minLength, maxLength}`。`match` / `exclude` 均为**带斜杠与 flag 的字符串**（JSON 中反斜杠需双写）。当前采用 `over` 型。
+- **User Evidence**: uTools 官方文档「plugin.json 核心配置文件说明 → 匹配指令 / feature.cmds」；进入插件时 `onPluginEnter` 回调收到 `{code, type, payload}`，`type` 为匹配指令类型（`regex` 或 `over`）时 `payload` 为匹配到的文本。
 
 ### CON-004: 严格 TDD（测试先于实现）
 
@@ -194,3 +223,45 @@ Language: zh-CN（与 .codexspec/config.yml 的 language.output 一致）
 - **对 REQ-001 / REQ-002 / REQ-003 的影响**: 无。`regex` 路径的字段与行为未变。
 - **仍未核验（交接用户）**: Task 5.2 的负例集合、Task 5.3 端到端（预填 + 自动查询、功能指令回归）、
   Task 5.4 的 OPEN-001（输入 `word` 是否同时出现两条目）。
+
+### 2026-09-27 14:39 复验第 5 轮：**推翻第 4 轮判定** —— 生效路径为 `over`，`regex` 从未生效
+
+- **触发**: 用户第 5 轮复验，候补中的「单词详解」**消失**。用户怀疑「正则表达式有问题」，指示把
+  `match` 改为 `/[a-zA-Z]+/`，并把最小 / 最大字符数改为 2 / 100。
+- **决定性证据（第 4 ↔ 5 轮唯一变量）**: 两轮的 `public/plugin.json` 差异**仅为 `over` 指令的存删**，
+  其余（`code`、字符串指令、`regex` 指令）完全一致；两轮均已重新「安装（开发模式）」。
+
+  | 轮次 | `wordMatch.cmds` | 候补「单词详解」 |
+  |------|-----------------|----------------|
+  | 第 4 轮 | 字符串 + `regex` + **`over`** | **有** |
+  | 第 5 轮 | 字符串 + `regex`（删 `over`） | **无** |
+
+  → **`over` 是唯一生效路径；`regex` 在真机从未生效。** 第 4 轮「候补 label 与 `regex` 的 label
+  一致 → 判定 `regex` 生效」的推断**不成立**：uTools 对同一 feature 的候补显示 label 并非取被命中
+  指令自身的 label（推断：取 `cmds` 首项，即字符串指令「单词详解」；未直接验证）。
+- **用户指示的采纳情况（部分采纳，理由如下）**:
+  - **采纳其意图**：① 让「仅单个英文单词」的匹配**真正生效**；② 字符数区间改为 2 ~ 100。
+  - **未采纳其具体形式**（继续使用 `regex` 并把 `match` 改为 `/[a-zA-Z]+/`），两项理由：
+    1. `regex` 型已确证不生效，修改其 `match` 内容**无法解决**「匹配不到」；
+    2. 去掉 `^` `$` 后的 `/[a-zA-Z]+/` 是 **search（子串）语义**，`hello world`、`abc123`
+       均会命中，直接违反 CON-001。
+  - **替代实现**：改用 `over` 型 + `exclude: "/[^a-zA-Z]/"`。该组合对 17 组输入的命中行为与
+    原 `^[a-zA-Z]+$` 等价且**更严格**（连空格也排除），CON-001 完整满足。
+- **已执行的全部变更**:
+  | 项 | 变更 |
+  |----|------|
+  | `public/plugin.json` | `wordMatch.cmds` 第 2 项：`regex`+`match` → **`over`+`exclude: "/[^a-zA-Z]/"`**；`minLength` 1 → **2**；`maxLength` 64 → **100** |
+  | `src/main-page/index.jsx` | 自动查询守卫：`enterAction.type !== 'regex'` → **`!== 'over'`**（`onPluginEnter` 的 `type` 随匹配类型变化，不改则端到端失效） |
+  | `src/main-page/index.test.jsx`、`src/App.test.jsx` | 测试桩的 `type: 'regex'` → `'over'`（共 7 处） |
+  | `requirements.md` | CON-002 由「MUST 为 `regex`」变更为「MUST 为 `over` 且配严格 `exclude`」；原条目降为 `CON-002-SUPERSEDED`；CON-003 字段形态同步 |
+  | `spec.md` / `plan.md` / `tasks.md` | 类型与长度参数全量同步（21 处）；`spec.md` 的官方 type 枚举列表经人工复核已还原为 `"text" \| "img" \| "file" \| "regex" \| "over" \| "window"` |
+  | `spec.md` | 「匹配指令对象字段」补充 `over` 型所用 `exclude` 字段说明 |
+- **测试先行证据（宪法原则 8）**: 先改测试 → `npx vitest run src/main-page/index.test.jsx`
+  得 **`3 failed | 27 passed (30)`**，失败原因为预期（输入框 `Received:` 空字符串、`query` 调用数为 0）
+  → 再改实现 → 全套 **149 passed**。
+- **⚠️ 由参数变更直接引入的两项行为变化（已向用户明示）**:
+  1. **`minLength: 2`** → 单字母单词（`a`、`I`）**不再命中**。原 `minLength` 为 1。
+  2. **`maxLength: 100`** → 「65 个连续字母」由「不命中」变为**命中**；`tasks.md` 中 5.2 的负例
+     上界已相应调整为 101 个连续字母。
+- **对 REQ-001 / REQ-002 / REQ-003 的影响**: 触发条件（仅单字母序列）不变；**进入动作的 `type`
+  取值由 `regex` 变为 `over`**（REQ-002 已同步）。REQ-003 的自动查询逻辑不变。

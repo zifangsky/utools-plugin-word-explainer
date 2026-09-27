@@ -365,13 +365,13 @@ describe('MainPage 匹配指令进入', () => {
     getPreferredModel.mockReturnValue(null)
   })
 
-  const regexAction = (payload) => ({ code: 'wordMatch', type: 'regex', payload })
+  const overAction = (payload) => ({ code: 'wordMatch', type: 'over', payload })
 
   it('匹配指令进入 → 输入框预填该单词并自动发起查询', () => {
     const query = vi.fn()
     setupUseWordQuery({ query })
 
-    render(<MainPage enterAction={regexAction('ephemeral')} />)
+    render(<MainPage enterAction={overAction('ephemeral')} />)
 
     expect(screen.getByPlaceholderText('输入英文单词...')).toHaveValue('ephemeral')
     expect(query).toHaveBeenCalledTimes(1)
@@ -383,7 +383,7 @@ describe('MainPage 匹配指令进入', () => {
     setupUseWordQuery({ query })
     getPreferredModel.mockReturnValue('model-x')
 
-    render(<MainPage enterAction={regexAction('serendipity')} />)
+    render(<MainPage enterAction={overAction('serendipity')} />)
 
     expect(query).toHaveBeenCalledWith('serendipity', 'model-x')
   })
@@ -392,7 +392,7 @@ describe('MainPage 匹配指令进入', () => {
     const query = vi.fn()
     setupUseWordQuery({ query })
 
-    render(<MainPage enterAction={regexAction('')} />)
+    render(<MainPage enterAction={overAction('')} />)
 
     expect(query).not.toHaveBeenCalled()
   })
@@ -411,10 +411,10 @@ describe('MainPage 匹配指令进入', () => {
     const query = vi.fn()
     setupUseWordQuery({ query })
 
-    const { rerender } = render(<MainPage enterAction={regexAction('alpha')} />)
+    const { rerender } = render(<MainPage enterAction={overAction('alpha')} />)
     expect(query).toHaveBeenLastCalledWith('alpha', undefined)
 
-    rerender(<MainPage enterAction={regexAction('beta')} />)
+    rerender(<MainPage enterAction={overAction('beta')} />)
 
     expect(query).toHaveBeenLastCalledWith('beta', undefined)
     expect(query).toHaveBeenCalledTimes(2)

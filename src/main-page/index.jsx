@@ -61,9 +61,9 @@ export default function MainPage ({ enterAction }) {
     }
   }, [])
 
-  // 经匹配指令进入时，预填该单词并自动查询
+  // 经匹配指令（over 型）进入时，预填该单词并自动查询
   useEffect(() => {
-    if (!enterAction || enterAction.type !== 'regex' || !enterAction.payload) return
+    if (!enterAction || enterAction.type !== 'over' || !enterAction.payload) return
     setWord(enterAction.payload)
     query(enterAction.payload, getPreferredModel() || undefined)
   }, [enterAction])

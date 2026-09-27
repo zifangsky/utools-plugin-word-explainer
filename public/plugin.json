@@ -22,11 +22,11 @@
       "cmds": [
         "单词详解",
         {
-          "type": "regex",
+          "type": "over",
           "label": "单词详解",
-          "match": "/^[a-zA-Z]+$/",
-          "minLength": 1,
-          "maxLength": 64
+          "exclude": "/[^a-zA-Z]/",
+          "minLength": 2,
+          "maxLength": 100
         }
       ]
     }

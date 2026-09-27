@@ -17,14 +17,14 @@ Language: zh-CN（与 .codexspec/config.yml 的 language.output 一致）
 
 ## 2. 主界面匹配进入行为（`src/main-page/index.jsx` 层）
 
-- [x] 2.1 **[RED]** 在 `src/main-page/index.test.jsx` 追加 `describe('MainPage 匹配指令进入')`，复用文件既有的 `setupUseWordQuery` / `setupWindowUtools` / `getPreferredModel` mock 机制，覆盖 5 个用例：① `type: 'regex'` + `payload` 时输入框预填且 `query` 被调用一次，实参为 `(payload, undefined)`；② `getPreferredModel` 返回 `'model-x'` 时 `query` 实参为 `(payload, 'model-x')`；③ `payload` 为空字符串时不调用 `query`；④ `type: 'text'`（功能指令进入）时不调用 `query` 且输入框为空；⑤ 以不同 action 重新渲染后 `query` 以新 payload 被再次调用。Covers: REQ-003、REQ-004、REQ-005; Plan: P3 / 组件 `src/main-page/index.test.jsx`
+- [x] 2.1 **[RED]** 在 `src/main-page/index.test.jsx` 追加 `describe('MainPage 匹配指令进入')`，复用文件既有的 `setupUseWordQuery` / `setupWindowUtools` / `getPreferredModel` mock 机制，覆盖 5 个用例：① `type: 'over'` + `payload` 时输入框预填且 `query` 被调用一次，实参为 `(payload, undefined)`；② `getPreferredModel` 返回 `'model-x'` 时 `query` 实参为 `(payload, 'model-x')`；③ `payload` 为空字符串时不调用 `query`；④ `type: 'text'`（功能指令进入）时不调用 `query` 且输入框为空；⑤ 以不同 action 重新渲染后 `query` 以新 payload 被再次调用。Covers: REQ-003、REQ-004、REQ-005; Plan: P3 / 组件 `src/main-page/index.test.jsx`
 - [x] 2.2 **[RED 确认]** 运行 `npm test src/main-page/index.test.jsx`，确认新增用例组失败，且既有 25 条 `MainPage` 测试仍全部通过（后者验证新增断言未误伤既有行为）。Covers: NFR-002; Plan: P3 验证
-- [x] 2.3 **[GREEN]** 修改 `src/main-page/index.jsx`：函数签名改为接收 `enterAction` prop；新增自动查询 effect，守卫 MUST 为空值安全形式（`if (!enterAction || enterAction.type !== 'regex' || !enterAction.payload) return`），命中时 `setWord(payload)` 并 `query(payload, getPreferredModel() || undefined)`；effect 依赖数组为 `[enterAction]`。MUST NOT 复用 `handleQuery`（其从 `word` state 取值，同一 commit 内未更新）。Covers: REQ-003、REQ-004、REQ-005; Plan: P4 / PLD-2、PLD-3、PLD-4 / 组件 `src/main-page/index.jsx`
+- [x] 2.3 **[GREEN]** 修改 `src/main-page/index.jsx`：函数签名改为接收 `enterAction` prop；新增自动查询 effect，守卫 MUST 为空值安全形式（`if (!enterAction || enterAction.type !== 'over' || !enterAction.payload) return`），命中时 `setWord(payload)` 并 `query(payload, getPreferredModel() || undefined)`；effect 依赖数组为 `[enterAction]`。MUST NOT 复用 `handleQuery`（其从 `word` state 取值，同一 commit 内未更新）。Covers: REQ-003、REQ-004、REQ-005; Plan: P4 / PLD-2、PLD-3、PLD-4 / 组件 `src/main-page/index.jsx`
 - [x] 2.4 **[全绿]** 运行 `npm test`，确认全部通过；记录实际通过数（记为 `N`），用于第 4 组文档同步。Covers: NFR-002; Plan: P4 验证
 
 ## 3. uTools 平台配置
 
-- [x] 3.1 **[P]** 在 `public/plugin.json` 的 `features` 数组追加一项，内容严格等于 plan.md「`public/plugin.json` 新增配置契约」：`code` 为 `wordMatch`，`cmds` 含 `{ type: "regex", label: "单词详解", match: "/^[a-zA-Z]+$/", minLength: 1, maxLength: 64 }`。MUST NOT 改动既有 `explain` feature 与 `tools` 配置。Covers: REQ-001、DEC-001、DEC-003、OUT-004; Plan: P5 / 配置契约
+- [x] 3.1 **[P]** 在 `public/plugin.json` 的 `features` 数组追加一项，内容严格等于 plan.md「`public/plugin.json` 新增配置契约」：`code` 为 `wordMatch`，`cmds` 含 `{ type: "over", label: "单词详解", exclude: "/[^a-zA-Z]/", minLength: 2, maxLength: 100 }`。MUST NOT 改动既有 `explain` feature 与 `tools` 配置。Covers: REQ-001、DEC-001、DEC-003、OUT-004; Plan: P5 / 配置契约
 - [x] 3.2 校验配置：用 node 解析 `public/plugin.json` 确认 JSON 合法、`features` 长度由 1 变为 2、新 feature 的字段值与上面逐项一致、既有 feature 的 `code`/`cmds` 与改动前相同（可用 `git diff` 佐证）。Covers: REQ-001、OUT-004; Plan: P5 验证
 
 ## 4. 文档与代码同步
@@ -36,7 +36,9 @@ Language: zh-CN（与 .codexspec/config.yml 的 language.output 一致）
 ## 5. 门禁与人工核验
 
 - [x] 5.1 运行 `npm test` 与 `npx standard`，记录实际通过数与 lint 结果；两者 MUST 全绿/无错。同一步以 `git diff --stat` 确认改动面不含 `package.json` / `package-lock.json`、`git status` 无新增 `src/<module>/` 目录，据此验证「无新增依赖、无新模块」。Covers: NFR-002、NFR-001; Plan: P7 门禁
-- [ ] 5.2 真实 uTools 手工核验 REQ-001：`npm run dev` 启动 Vite；在 uTools 开发者工具中「卸载（开发模式）」→「安装（开发模式）」重载 `plugin.json`；主输入框依次输入 `ephemeral`（期望出现「单词详解」）、`你好`、`hello world`、`abc123`、`well-known`、65 个连续字母（均期望不出现）、`查词`（期望不出现「单词详解」且既有功能指令行为不变）。Covers: REQ-001、CON-001; Plan: P7 人工核验（spec REQ-001 记录的核验准则）
+- [ ] 5.2 真实 uTools 手工核验 REQ-001：`npm run dev` 启动 Vite；在 uTools 开发者工具中「卸载（开发模式）」→「安装（开发模式）」重载 `plugin.json`；主输入框依次输入 `ephemeral`（期望出现「单词详解」）、`你好`、`hello world`、`abc123`、`well-known`、101 个连续字母（均期望不出现）、`查词`（期望不出现「单词详解」且既有功能指令行为不变）。Covers: REQ-001、CON-001; Plan: P7 人工核验（spec REQ-001 记录的核验准则）
+
+  > **参数变更（第 5 轮，2026-09-27）**：原负例含「65 个连续字母」，因 `maxLength` 由 64 改为 100，该输入**现已命中**，故负例上界相应调整为 **101** 个连续字母。
 - [ ] 5.3 真实 uTools 手工核验端到端行为：选中「单词详解」进入后，确认输入框已预填该单词且详解自动开始生成（REQ-003）；随后退出并以功能指令 `查词` 进入，确认输入框为空且无自动查询（REQ-004）。Covers: REQ-003、REQ-004; Plan: P7 人工核验
 - [ ] 5.4 核验 OPEN-001：输入 `word` 观察是否同时出现功能指令与匹配指令两条目；将观察结论回写 `requirements.md` 的 OPEN-001（若为「合并」则关闭该条目；若为「不合并」则保留并记录是否按 DEC-004 后续处理）。Covers: OPEN-001; Plan: P7 人工核验
 
@@ -133,12 +135,27 @@ Language: zh-CN（与 .codexspec/config.yml 的 language.output 一致）
 
 `5.2`、`5.3`、`5.4`、`6.2` 因需真实 uTools 桌面环境而未能完成，原因、已尝试的等价手段与交接方式记录于 `issues.md`。前置条件（Vite dev server）已就绪。
 
-### 核验进展（2026-09-27 第 4 轮）
+### 核验进展（2026-09-27 第 4~5 轮）
 
-- **`5.2` 正向场景：已通过** —— 用户实测 `Alt+Space` → 输入 `ephemeral` → 「匹配结果」出现带 `dev`
-  角标的「单词详解」。**REQ-001 首次在真实环境成立**；同时判定生效路径为 `regex`（`over` 探针的
-  label 未出现），探针已收敛移除。逐条证据见 `issues.md` 第 4 轮。
-- **`5.2` 负例集合：待核验** —— `你好`、`hello world`、`abc123`、`well-known`、65 个连续字母、
-  `查词` 均期望**不出现**「单词详解」。
+- **`5.2` 正向场景：曾通过（第 4 轮）** —— 用户实测 `Alt+Space` → 输入 `ephemeral` → 「匹配结果」
+  出现带 `dev` 角标的「单词详解」。**REQ-001 首次在真实环境成立**。该轮据「候补 label 与 `regex`
+  指令的 label 逐字一致」**误判**生效路径为 `regex`，并据此移除了 `over` 探针。
+- **⚠️ 上述判定已被第 5 轮推翻（2026-09-27 14:35）** —— 移除 `over` 探针后，同一配置下候补中的
+  「单词详解」**消失**；第 4 ↔ 5 轮**唯一变量即 `over` 的存删** → **实际生效路径是 `over`，
+  `regex` 在真机从未生效**。第 4 轮的「label 一致」推断不成立：uTools 对同一 feature 的候补显示
+  label 并非取被命中指令自身的 label（**推断**：取 `cmds` 首项，即字符串指令「单词详解」；
+  该推断未直接验证）。
+- **据此的变更（第 5 轮）** —— `wordMatch.cmds` 改为 `over` 型 + `exclude: "/[^a-zA-Z]/"`（语义
+  等价于原 `^[a-zA-Z]+$` 且更严格，空格亦被排除），长度区间按用户指示取 2~100；
+  `src/main-page/index.jsx` 的守卫随之由 `type !== 'regex'` 改为 `type !== 'over'`
+  （严格 TDD：先改测试得 `3 failed | 27 passed`，再改实现得 `149 passed`）。
+  逐条证据见 `issues.md` 第 5 轮。
+- **`5.2` 负例集合：待核验** —— `你好`、`hello world`、`abc123`、`well-known`、101 个连续字母、
+  `查词` 均期望**不出现**「单词详解」。（原为「65 个连续字母」，因 `maxLength` 改为 100 而上界调整，
+  该输入现已命中。）
+- **已用脚本离线核验（17 组输入）** —— `over` + `exclude: "/[^a-zA-Z]/"` + 2~100 的命中行为：
+  `ephemeral` / `word` / `Hello` / 64 字母 命中；`你好` / `hello world` / `abc123` / `well-known` /
+  `'x` / 两个空格 / `café` / 空串 均**不**命中；单字母 `a` / `I` **不命中**（`minLength: 2` 的直接
+  后果）；101 字母不命中。
 - **`5.3`、`5.4`：待核验** —— 端到端预填 + 自动查询、以及 `word` 是否同时出现两条目（OPEN-001）。
 - **`6.2`：待 `5.2`~`5.4` 完成后执行。**

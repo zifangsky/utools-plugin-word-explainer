@@ -47,10 +47,20 @@ npm test         # 运行 149 个测试 (vitest)
 > - 官方示例的 feature `code` **自带连字符**（`test-regex`、`test-over`、`test-files`），故
 >   `code` 中含 `-` 无害；`cmds` 支持**字符串与对象混排**（生产插件如
 >   `UtilityTools.jsonOper` 即 `["JSON处理", {regex 对象}]`）。
-> - **实测结论（2026-09-27）**：`wordMatch` 下曾并行挂 `regex`（label `单词详解`）与 `over`
->   （label `单词详解（复制即查）`）作 A/B 探针。候补中实际出现的是 `单词详解`
->   → 即 **`regex` 路径生效**，`over` 未进入候补。探针已移除，`cmds` 收敛为
->   `["单词详解", { regex 对象 }]`（字符串指令供直接搜「单词详解」进入）。
+> - **实测结论（2026-09-27，经 5 轮真机复验）**：`wordMatch` 下曾并行挂 `regex`（label
+>   `单词详解`）与 `over`（label `单词详解（复制即查）`）作 A/B 探针。结论：**`regex` 型在本机
+>   从未生效，`over` 型是唯一生效路径**。
+>   判定依据是**控制变量实验**：删除 `over` 后候补即消失（第 4 ↔ 5 轮唯一变量为 `over` 的存删，
+>   其余配置逐字一致）。
+>   ⚠️ **不要用「候补 label 与某条指令的 label 一致」来判定生效指令** —— uTools 对同一 feature
+>   的候补显示 label **并非取被命中指令自身的 label**（第 4 轮据此误判过一轮）。
+> - **当前形态**：`cmds` = `["单词详解", { "type": "over", "label": "单词详解",
+>   "exclude": "/[^a-zA-Z]/", "minLength": 2, "maxLength": 100 }]`。`over` 的 `exclude` 承担
+>   「仅单个英文单词」的语义（等价于原 `^[a-zA-Z]+$` 且更严格——空格亦被排除）。
+> - **⚠️ 代码侧联动（易漏）**：`onPluginEnter` 的 `action.type` **随匹配类型变化**（`over` 型即
+>   `'over'`，`regex` 型即 `'regex'`）。**改 `plugin.json` 的匹配类型时 MUST 同步
+>   `src/main-page/index.jsx` 的守卫**（当前为 `enterAction.type !== 'over'`），否则会出现
+>   「候补能出现、但进入后不自动查询」的隐性故障。
 >
 > 另注：`public/` 是 uTools 实际加载的目录，`dist/` 是 `vite build` 产物（构建时会把 `public/`
 > 的内容一并拷入）。**`plugin.json` 的唯一源是 `public/plugin.json`**，不要改 `dist/` 下的副本。

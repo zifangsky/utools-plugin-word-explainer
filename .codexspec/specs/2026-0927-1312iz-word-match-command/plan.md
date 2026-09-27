@@ -62,16 +62,16 @@ Language: zh-CN（与 .codexspec/config.yml 的 language.output 一致）
 
 **Accepted Trade-offs**：需新增 `src/App.test.jsx`（该文件此前不存在）。
 
-### Decision 2（PLD-2）：判定条件为 `enterAction.type === 'regex' && enterAction.payload`
+### Decision 2（PLD-2）：判定条件为 `enterAction.type === 'over' && enterAction.payload`
 
 **Context**：需要在「匹配指令进入」与「功能指令进入」之间判别。
 
-**Decision**：以 `type` 为 `'regex'` 且 `payload` 为真值作为自动查询的唯一条件。判定 MUST 以空值安全形式书写——`if (!enterAction || enterAction.type !== 'regex' || !enterAction.payload) return`——因为既有 25 条 `MainPage` 测试均未传入该 prop（值为 `undefined`），且 `App.jsx` 在首次进入前的初始 `enterAction` 为 `null`。
+**Decision**：以 `type` 为 `'over'` 且 `payload` 为真值作为自动查询的唯一条件。判定 MUST 以空值安全形式书写——`if (!enterAction || enterAction.type !== 'over' || !enterAction.payload) return`——因为既有 25 条 `MainPage` 测试均未传入该 prop（值为 `undefined`），且 `App.jsx` 在首次进入前的初始 `enterAction` 为 `null`。
 
 **Rationale**：
 
 - `type` 直接指示 `payload` 的数据语义（spec REQ-002 的第二条场景即以此表述）。
-- 空字符串为假值，因此「匹配数据为空时不查询」（REQ-003 第三条场景）由同一条件自然满足，**无需任何防御分支**（原则 7：不为不可能出现的场景写错误处理；`type` 为 `regex` 时 `payload` 必然为字符串）。
+- 空字符串为假值，因此「匹配数据为空时不查询」（REQ-003 第三条场景）由同一条件自然满足，**无需任何防御分支**（原则 7：不为不可能出现的场景写错误处理；`type` 为 `over` 时 `payload` 必然为字符串）。
 - 不以 `code === 'wordMatch'` 为条件：`type` 已足够，且 `code` 判定会在未来新增匹配指令时静默失效。
 
 ### Decision 3（PLD-3）：自动查询的模型来源直接读 `getPreferredModel()`，不读 `selectedModel` state
@@ -114,10 +114,10 @@ Language: zh-CN（与 .codexspec/config.yml 的 language.output 一致）
 uTools 主输入框（用户粘贴/输入）
         │  单个纯英文单词
         ▼
-public/plugin.json  ── features[].cmds[] 含 type:"regex"
+public/plugin.json  ── features[].cmds[] 含 type:"over"
         │  命中 → 候选出现「单词详解」
         ▼
-utools.onPluginEnter({ code:'wordMatch', type:'regex', payload:'ephemeral' })
+utools.onPluginEnter({ code:'wordMatch', type:'over', payload:'ephemeral' })
         │
         ▼
 ┌─────────────────────────────────────────────────────────┐
@@ -130,7 +130,7 @@ utools.onPluginEnter({ code:'wordMatch', type:'regex', payload:'ephemeral' })
 ┌─────────────────────────────────────────────────────────┐
 │ src/main-page/index.jsx                                 │
 │   useEffect([enterAction])                              │
-│     if (type !== 'regex' || !payload) return            │  ← 功能指令入口在此短路
+│     if (type !== 'over' || !payload) return             │  ← 功能指令入口在此短路
 │     setWord(payload)              ──► 输入框预填         │
 │     query(payload, getPreferredModel() || undefined)     │
 └─────────────────────────────────────────────────────────┘
@@ -162,11 +162,11 @@ use-word-query ──► prompt-template ──► ai-call（utools.ai 流式）
   "explain": "匹配指令 —— 主输入框为单个英文单词时，直接进入插件查询该单词",
   "cmds": [
     {
-      "type": "regex",
+      "type": "over",
       "label": "单词详解",
-      "match": "/^[a-zA-Z]+$/",
-      "minLength": 1,
-      "maxLength": 64
+      "exclude": "/[^a-zA-Z]/",
+      "minLength": 2,
+      "maxLength": 100
     }
   ]
 }

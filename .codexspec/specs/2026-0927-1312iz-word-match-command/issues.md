@@ -141,7 +141,9 @@
   `["单词详解", { type: "regex", label: "单词详解", match: "/^[a-zA-Z]+$/", minLength: 1, maxLength: 64 }]`。
   字符串指令「单词详解」保留（供直接搜索该词进入插件）。
   `CLAUDE.md` 已同步更新为上述两条结论（含「看得到 ≠ 会生效」的警示）。
-- **Status**: **Resolved（本 Issue 关闭）**
+- **Status**: **Superseded by 第 5 轮** —— 「结论一：`regex` 路径生效」**已被推翻**（第 5 轮删掉
+  `over` 后候补即消失，两轮唯一变量为 `over` 的存删 → 实际生效路径是 `over`）。
+  「结论二：索引只在『安装（开发模式）』时重建」**仍然成立**。详见下一条 Issue。
 - **Remaining（仍需用户核验）**:
   - Task 5.2 的**负例**：`你好`、`hello world`、`abc123`、`well-known`、65 个连续字母、
     `查词` 均**不应**出现「单词详解」；
@@ -149,6 +151,57 @@
     再以功能指令 `查词` 进入时，输入框应为空且**不**自动查询；
   - Task 5.4 / OPEN-001：输入 `word` 观察是否**同时**出现功能指令（`explain` feature 的字符串
     指令 `word`）与匹配指令（`单词详解`）两条目，结论回写 `requirements.md`。
+
+---
+
+## Issue: 第 5 轮复验「单词详解」消失 → 第 4 轮判定被推翻，生效路径确认为 `over`
+
+- **Task**: 5.2、5.3
+- **现象（用户截图实测）**: `Alt+Space` → 输入 `ephemeral` → 「匹配结果」中**没有**「单词详解」
+  （该位置被第三方指令「汉字转拼音」占据）。用户判断「是不是正则表达式有问题」，指示把 `match`
+  改成 `/[a-zA-Z]+/`，最小 / 最大字符数改为 2 / 100。
+- **决定性证据（第 4 ↔ 5 轮唯一变量）**: 两轮 `public/plugin.json` 的差异**仅为 `over` 指令的
+  存删**，其余（`code`、字符串指令、`regex` 指令）逐字一致，且两轮均已重新「安装（开发模式）」。
+
+  | 轮次 | `wordMatch.cmds` | 候补「单词详解」 |
+  |------|-----------------|----------------|
+  | 第 4 轮 | 字符串 + `regex` + **`over`** | **有** |
+  | 第 5 轮 | 字符串 + `regex`（删 `over`） | **无** |
+
+  → **`over` 是唯一生效路径；`regex` 在真机从未生效**（第 2 轮单独挂 `regex` 时同为「无」）。
+- **第 4 轮推断为何错（认知修正）**: 第 4 轮依据「候补 label 为『单词详解』，与 `regex` 的 label
+  逐字一致」判定 `regex` 生效。该推断**不成立** —— uTools 对同一 feature 的候补显示 label
+  **并非取被命中指令自身的 label**（**推断**：取 `cmds` 首项，即字符串指令「单词详解」；未直接
+  验证）。教训：**label 匹配不足以判定生效指令**，唯一可靠判据是**控制变量法的存删实验**。
+- **用户指示的采纳情况（部分采纳）**:
+  - **采纳其意图**：① 让匹配真正生效；② 字符数区间 2 ~ 100。
+  - **未采纳其具体形式**（继续用 `regex` + `match: "/[a-zA-Z]+/"`），两项理由：
+    1. `regex` 型已确证不生效，改其 `match` 内容无法解决问题；
+    2. 去掉 `^` `$` 后为 **search（子串）语义**，`hello world`、`abc123` 均会命中，违反 CON-001。
+  - **替代实现**：`over` 型 + `exclude: "/[^a-zA-Z]/"`，语义等价且更严格（空格亦排除）。
+- **已执行**:
+  | 文件 | 变更 |
+  |------|------|
+  | `public/plugin.json` | `wordMatch.cmds[1]`：`regex`+`match` → **`over`+`exclude: "/[^a-zA-Z]/"`**；`minLength` 1 → **2**；`maxLength` 64 → **100** |
+  | `src/main-page/index.jsx` | 守卫 `enterAction.type !== 'regex'` → **`!== 'over'`**（`onPluginEnter` 的 `type` 随匹配类型变化，**不改则端到端失效**，候补出现也点不出结果） |
+  | `src/main-page/index.test.jsx`、`src/App.test.jsx` | 测试桩 `type: 'regex'` → `'over'`（7 处） |
+  | `requirements.md` | CON-002 变更为「MUST 为 `over` 且配严格 `exclude`」；原条目降为 `CON-002-SUPERSEDED`；CON-003 字段形态同步；新增第 5 轮变更记录 |
+  | `spec.md` / `plan.md` / `tasks.md` | 类型与长度参数同步（21 处）；`spec.md` 官方 type 枚举经人工复核还原；补 `over` 型 `exclude` 字段说明；`tasks.md` 5.2 负例上界 65 → **101** |
+  | `CLAUDE.md` | 探针段改为「`over` 为生效路径」的实测结论 |
+  | 构建 | 已执行 `npm run build`，`dist/plugin.json` 与 `public/plugin.json` **无差异** |
+- **测试先行证据（宪法原则 8）**: 先改测试 → `npx vitest run src/main-page/index.test.jsx` 得
+  **`3 failed | 27 passed (30)`**（失败原因与预期一致：输入框 `Received:` 为空、`query` 调用数 0）
+  → 再改实现 → 全套 **`12 files / 149 passed`**，`npx standard` 退出码 0。
+- **⚠️ 由参数变更直接引入的两项行为变化（已向用户明示）**:
+  1. **`minLength: 2`** → 单字母单词（`a`、`I`）**不再命中**；
+  2. **`maxLength: 100`** → 「65 个连续字母」由不命中变为**命中**（负例上界已调至 101）。
+- **Status**: **Needs Verification → 待用户复验（第 5 轮）**
+  - 前置条件就绪：Vite dev server 运行中（`localhost:5173` HTTP 200，PID 17716）；
+    已重新打包（`npm run build`，`dist/` 与 `public/` 的 `plugin.json` 已同步）。
+  - 复验步骤：uTools 开发者工具 → 本项目 →「**卸载（开发模式）**」→「**安装（开发模式）**」
+    → `Alt+Space` → 输入 `ephemeral`。
+  - **期望**：候补出现「单词详解」，选中后**输入框预填且详解自动开始生成**（本轮同步修正了
+    `type` 守卫，端到端才能通）。
 
 ---
 

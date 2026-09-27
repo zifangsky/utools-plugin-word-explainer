@@ -11,7 +11,7 @@ Language: zh-CN（与 .codexspec/config.yml 的 language.output 一致）
 
 ### Requirement: REQ-001 注册单词匹配指令
 
-插件 MUST 在 `public/plugin.json` 的 `features` 数组中新增一个功能项，`code` 为 `wordMatch`，其 `cmds` 包含一条 `type` 为 `"regex"` 的匹配指令，`label` 为「单词详解」。该匹配指令 MUST 仅在主输入框内容为单个纯英文单词时命中。
+插件 MUST 在 `public/plugin.json` 的 `features` 数组中新增一个功能项，`code` 为 `wordMatch`，其 `cmds` 包含一条 `type` 为 `"over"` 的匹配指令，`label` 为「单词详解」。该匹配指令 MUST 仅在主输入框内容为单个纯英文单词时命中。
 
 Sources: NEED-001, CON-001, CON-002, CON-003, DEC-001, DEC-003
 
@@ -19,12 +19,12 @@ Sources: NEED-001, CON-001, CON-002, CON-003, DEC-001, DEC-003
 
 #### Scenario: 单个英文单词命中匹配指令
 
-- **WHEN** uTools 主输入框内容为单个纯英文单词（仅含 `[a-zA-Z]`，长度 1–64）
+- **WHEN** uTools 主输入框内容为单个纯英文单词（仅含 `[a-zA-Z]`，长度 2–100）
 - **THEN** 候选中出现一条 `label` 为「单词详解」的匹配指令，其归属功能 `code` 为 `wordMatch`
 
 #### Scenario: 非单词内容不命中
 
-- **WHEN** 主输入框内容含空格、中文、数字、标点（如 `hello world`、`你好`、`abc123`、`well-known`），或字母长度超过 64
+- **WHEN** 主输入框内容含空格、中文、数字、标点（如 `hello world`、`你好`、`abc123`、`well-known`），或字母长度超过 100
 - **THEN** 该匹配指令不出现在候选中
 
 #### Scenario: 中文功能指令不误命中
@@ -41,12 +41,12 @@ Sources: NEED-002, CON-003
 #### Scenario: 匹配指令进入时动作含匹配数据
 
 - **WHEN** 用户通过 `wordMatch` 的匹配指令进入插件
-- **THEN** 主界面可获取到 `code` 为 `wordMatch`、`type` 为 `"regex"`、`payload` 为匹配到的单词字符串
+- **THEN** 主界面可获取到 `code` 为 `wordMatch`、`type` 为 `"over"`、`payload` 为匹配到的单词字符串
 
 #### Scenario: 功能指令进入时动作不含匹配数据
 
 - **WHEN** 用户通过 `explain` 功能指令（`explain` / `查词` / `word` / `vocabulary`）进入插件
-- **THEN** 主界面可获取到的 `type` 不为 `"regex"`
+- **THEN** 主界面可获取到的 `type` 不为 `"over"`
 
 ### Requirement: REQ-003 匹配进入时预填并自动查询
 
@@ -129,7 +129,7 @@ uTools 提供「匹配指令」机制（`plugin.json` → `features[].cmds[]` �
 
 涉及文件：
 
-- `public/plugin.json` —— 新增 `wordMatch` feature 与 regex 匹配指令
+- `public/plugin.json` —— 新增 `wordMatch` feature 与 over 匹配指令
 - `src/App.jsx` —— 当前 `onPluginEnter` 回调丢弃了进入动作，需使其可被主界面感知
 - `src/main-page/index.jsx` —— 接收进入动作，命中匹配指令时预填并自动查询
 - `src/main-page/index.test.jsx` —— 新增行为测试
@@ -138,7 +138,7 @@ uTools 提供「匹配指令」机制（`plugin.json` → `features[].cmds[]` �
 
 - `feature.code`：必填，MUST 唯一，进入插件时回传给应用用于区分功能
 - `feature.cmds`：`Array<string|object>`，字符串为功能指令，对象为匹配指令
-- 匹配指令对象字段：`type`（必填）、`label`（必填）、`match`（正则字符串，带斜杠与 flag；JSON 中反斜杠需双写）、`minLength` / `maxLength`（可选，按字符数）
+- 匹配指令对象字段：`type`（必填，取 `regex` / `over` 等）、`label`（必填）、`regex` 型用 `match`、`over` 型用 `exclude`（均为带斜杠与 flag 的字符串；JSON 中反斜杠需双写）、`minLength` / `maxLength`（可选，按字符数）
 - `utools.onPluginEnter(callback)` 回调参数为 `{ code, type, payload, option, from }`；`type` 取 `"text" | "img" | "file" | "regex" | "over" | "window"`，`payload` 为「`feature.cmd.type` 对应匹配的数据」
 
 ## Goals
@@ -174,12 +174,12 @@ uTools 提供「匹配指令」机制（`plugin.json` → `features[].cmds[]` �
 ## Constraints
 
 - **CON-001** 仅匹配单个纯英文单词（`[a-zA-Z]`），MUST NOT 匹配短语、句子、中文
-- **CON-002** 匹配类型 MUST 为 `regex`，MUST NOT 使用 `over`
+- **CON-002** 匹配类型 MUST 为 `over`，MUST NOT 使用 `over`
 - **CON-003** 配置载体为 `public/plugin.json`；`match` 为字符串形式的正则（如 `"/^[a-zA-Z]+$/"`）
 - **CON-004** 严格 TDD：测试先于实现；`npm test` 全绿 + `npx standard` 无错
 - **CON-005** 不新增依赖、不改变既有模块依赖方向
 - **宪法原则 3** 单词解释内容 MUST 由 `utools.ai()` 生成，不接外部词典
-- **宪法原则 7** 不为不可能出现的场景编写错误处理（如对 `type` 为 `regex` 时 `payload` 必然为字符串这一前提不写防御分支）
+- **宪法原则 7** 不为不可能出现的场景编写错误处理（如对 `type` 为 `over` 时 `payload` 必然为字符串这一前提不写防御分支）
 
 ## Assumptions
 
