@@ -11,7 +11,7 @@ React + Vite 工程，在 uTools 平台中运行的桌面插件。用户输入�
 npm run dev      # 启动开发服务器 (localhost:5173) — 只提供前端代码，不注册指令
 npm run build    # 生产构建到 dist/
 npm run deploy   # 构建 + 复制产物到 public/（uTools 应用商店打包用）
-npm test         # 运行 197 个测试 (vitest)
+npm test         # 运行 227 个测试 (vitest)
 ```
 
 > **⚠️ 改了 `public/plugin.json` 后：在 uTools 开发者工具中「卸载（开发模式）」再重新安装**
@@ -113,7 +113,7 @@ src/
 │   ├── index.js                # getSaveQueryHistory/setSaveQueryHistory (dbStorage)
 │   └── index.test.js
 ├── use-word-query/
-│   ├── index.js                # useWordQuery Hook + normalizeWord — 查询状态机(输入归一化) + 自动保存查词历史(受 saveQueryHistory 开关门控)
+│   ├── index.js                # useWordQuery Hook + normalizeWord/validateWord — 查询状态机(输入归一化 + 合法英文单词校验) + 自动保存查词历史(受 saveQueryHistory 开关门控)
 │   └── index.test.js
 ├── query-history/
 │   ├── index.js                # 数据层 — saveQueryRecord / getHistoryRecords / getDetailRecord / deleteQueryRecords
@@ -148,7 +148,7 @@ public/preload/
   - **⚠️ 性能红线**：`utools.dbStorage.getItem()` 是**同步 IPC**（`ipcRenderer.sendSync` 配对），读取期间**渲染进程完全阻塞**。契约：① 禁止在 render 期 / mount 期**批量**读取；② 同一 key 每次挂载**只读一次**（用 ref 复用，勿在多处重复读）；③ 仅子页面使用的数据 MUST **延迟到进入该页面**时再加载 —— 当前 `allAiModels()`（内含**全库前缀扫描** + 远程 `/model/list` 请求）与 `flomoTags` 均只在设置页使用，因此已下放到设置页加载
   - **⚠️ 匹配指令路径的敏感性**：经匹配指令（`over` 型）进入时，上述启动期开销全部落在「进入之后」的感知窗口内，而手动进入再点查询则无感（开销被算进「插件打开」阶段）。因此**启动路径上的任何额外 IO/请求都会被用户直接感知为「进去后卡住」**
 - **渲染**：自定义 markdown 解析器，支持 3 层嵌套列表
-- **查词输入归一化**：所有查词入口（首页「查询」/ Enter、匹配指令）MUST 统一经 `normalizeWord()`（去首尾空格 + 转小写）后再查询，使 AI 提示词、查词历史记录、flomo 笔记标题三处一致；仅含空格的输入 MUST NOT 触发查询
+- **查词输入归一化与校验**：所有查词入口（首页「查询」/ Enter、匹配指令）MUST 统一经 `normalizeWord()`（去首尾空格 + 转小写）→ `validateWord()` 后再查询，使 AI 提示词、查词历史记录、flomo 笔记标题三处一致；仅含空格的输入 MUST NOT 触发查询（静默）；非法或超长输入 MUST NOT 调用 AI，MUST 给出错误提示，MUST 清空上一次的查询结果（错误提示 MUST NOT 与旧结果同屏），且 MUST NOT 更新结果区的朗读对象。**校验口径按入口分叉**：首页手输允许英文字母 + 连字符 + 撇号（`well-known`、`don't`）且 MUST 至少含一个字母；匹配指令路径保持纯 `[a-zA-Z]`（受 uTools `over` 型选择器的 `exclude` 约束，见 `public/plugin.json`），不入 `validateWord()` 判定范围。长度上限两路径统一为 100
 
 ## 分支规则（红线）
 

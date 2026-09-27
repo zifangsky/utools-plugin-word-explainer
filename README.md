@@ -10,6 +10,8 @@
 
 **匹配指令** — 主输入框内容为单个英文单词（仅字母，长度 2~100）时，候选中出现「单词详解」；选中后自动预填并查询该单词。复制一个单词后直接呼出 uTools 即可使用。为免候补重复，`explain` / `word` / `vocabulary` 这三个既有功能指令关键词**不会**再额外触发匹配指令。
 
+**首页查词** — 输入框接受单个英文单词：英文字母，可含连字符与撇号（`well-known`、`don't`），最长 100 字符。输入含空格、数字、中文或超长内容时不会调用 AI，界面会给出提示，并同时清空上一次的查询结果。
+
 ## 开发
 
 ```bash
@@ -48,7 +50,7 @@ src/
 ├── markdown-view/              # Markdown 富文本渲染
 ├── model-preference/           # 模型偏好持久化
 ├── history-preference/         # 保存查词历史开关持久化
-├── use-word-query/             # 查询状态机 Hook（输入归一化 + 自动保存查词历史，受 saveQueryHistory 开关门控）
+├── use-word-query/             # 查询状态机 Hook（输入归一化 + 合法英文单词校验 + 自动保存查词历史，受 saveQueryHistory 开关门控）
 ├── query-history/              # 查词历史数据层（save/getHistoryRecords/getDetailRecord/deleteQueryRecords）
 ├── history-view/               # 查词历史 UI（搜索、时间筛选、单词卡片、详情）
 ├── word-audio/                 # 英文单词朗读 Hook（SpeechSynthesis，主界面与历史共用）
@@ -65,7 +67,7 @@ public/
 
 ## 技术栈
 
-- Vitest 4 + Testing Library (197 个测试)
+- Vitest 4 + Testing Library (227 个测试)
 - uTools AI API（流式调用）
 - uTools dbStorage（偏好持久化）
 - uTools MCP Tools（registerTool）

@@ -118,6 +118,21 @@ Language: zh-CN（与 .codexspec/config.yml 的 language.output 一致）
   （如 `in` / `or` / `ab` / `la`）仍会出现两条目；根治需枚举全部子串，但那会连带排除
   `in` / `or` 等真实英文单词，代价大于收益，故不采纳（详见「复验第 7 轮」）。
 
+### CON-007: 查词输入的字符集按入口分叉
+
+- **Status**: confirmed（2026-09-27 16:19 用户指示）
+- **Statement**: 查词输入的可接受字符集 MUST 按入口区分——① **首页手输**（「查询」按钮 / Enter）允许
+  英文字母、连字符与撇号（`[a-z'-]+`），且 MUST 至少含一个字母（排除 `-`、`--`、`''` 之类无字母的纯
+  符号输入）；② **匹配指令路径**保持纯英文字母（`exclude` 不变）。两路径长度上限均为 100
+  （`WORD_MAX_LENGTH`），且共用 `normalizeWord()` → `validateWord()`；校验不通过 MUST NOT 调用 AI，
+  MUST 给出提示，且 MUST NOT 写查词历史。
+- **Rationale**: 首页手输不受 uTools 选择器约束，放宽后可覆盖 `well-known`、`don't` 等合法词形；
+  匹配指令受 `over` 型 `exclude` 约束（非字母即排除），且用户明确要求该路径不做额外优化。
+- **User Evidence**: 2026-09-27 16:19「首页查词功能的校验不要太严格了，要能支持『well-known』、
+  『don't』这类格式的单词查询。匹配指令的模式，已经有正则表达式限制只能查询纯英文字母了，所以那个地方的
+  逻辑保持不变，不用再额外优化了」（附首页报错截图：输入 `well-known` 触发「请输入英文单词（仅限英文字母）」）。
+- **已知边界**: 仅接受 ASCII 撇号 `'`（U+0027）；弯引号 `’`（U+2019）仍被拒（未做 Unicode 归一化，见 DEC-006）。
+
 ## Decisions
 
 ### DEC-001: 匹配指令独立成新 feature（`code: wordMatch`）
@@ -167,6 +182,21 @@ Language: zh-CN（与 .codexspec/config.yml 的 language.output 一致）
   型提供的排除机制，且**不存在 `regex` 型那样的合法性门槛**（见 CON-006 的机制说明），改动面最小。
 - **User Evidence**: "确实出现了两条，你通过匹配的正则表达式把这个问题给优化了吧"
 
+### DEC-006: 首页放宽字符集、匹配指令维持纯字母（口径分叉）
+
+- **Status**: confirmed（2026-09-27 16:19 用户指示）
+- **Decision**: 在 `use-word-query` 的 `validateWord()` 中把字符集由 `^[a-z]+$` 放宽为 `^[a-z'-]+$`，
+  并追加「至少含一个字母」判定；`public/plugin.json` 的 `exclude` **保持原值不动**。错误提示文案同步由
+  「请输入英文单词（仅限英文字母）」改为「请输入英文单词（可含连字符或撇号）」，超长文案由
+  「单词过长（最多 100 个字母）」改为「单词过长（最多 100 个字符）」。
+- **Alternatives Rejected**: ① 同步放宽匹配指令 `exclude`（用户明确否决——该路径已有纯字母正则限制）；
+  ② 采用分段式严格正则 `^[a-z]+(?:['-][a-z]+)*$`（会拒绝 `'em` 这类撇号开头的真实词形，与
+  「不要太严格」的诉求相悖）；③ 额外做 Unicode 弯引号归一化（超出本次诉求，YAGNI）。
+- **Reason**: 校验位于两条入口的唯一汇合点（`query()`），在 Hook 层放宽即可同时覆盖首页按钮 / Enter，
+  且不触碰匹配指令的既有约束，改动面最小。
+- **Verification**: `npm test` → **225 passed**（净增 7 条：4 条放行用例 + 3 条无字母拒绝用例，
+  并将 `well-known` / `don't` 由拒绝集合移入放行集合）。
+
 ## Out of Scope
 
 ### OUT-001: 其他匹配类型
@@ -212,11 +242,17 @@ Language: zh-CN（与 .codexspec/config.yml 的 language.output 一致）
 
 ### OPEN-002: 匹配范围是否含连字符 / 撇号词汇
 
-- **Status**: open
-- **Why It Matters**: 决定匹配范围是否放宽到连字符 / 撇号词汇（如 `well-known`、`don't`）——当前 `exclude`（CON-002 / CON-006 取值，含非字母排除项）会将这些词整体排除。
-- **Owner**: User
-- **阻塞性**: 非阻塞——首版按 CON-001 取纯字母，如需放宽再单独迭代。
-- **AI 假设（未确认）**: 依据宪法原则 3「单个英文单词」，首版取纯 `[a-zA-Z]`。用户在阶段摘要确认中未对该假设单独表态，故本条保持 `open`，仅 CON-001 为绑定约束。
+- **Status**: closed（2026-09-27 16:19 用户裁决）
+- **结论**: **按入口分叉**——① **匹配指令路径保持纯字母**（`exclude` 不变），`well-known` / `don't`
+  不会经匹配指令进入候选；② **首页手输放宽**为「字母 + 连字符 + 撇号」（`[a-z'-]+` 且至少含一个字母），
+  由 `validateWord()` 放行。
+- **Why It Matters（历史）**: 决定匹配范围是否放宽到连字符 / 撇号词汇（如 `well-known`、`don't`）——`exclude`（CON-002 / CON-006 取值，含非字母排除项）会将这些词整体排除。
+- **处置**: 由 `CON-007` + `DEC-006` 处理；实现落在 `src/use-word-query/index.js` 的 `validateWord()`，
+  `public/plugin.json` 的 `exclude` **不变**。
+- **Owner**: User（已裁决）
+- **阻塞性**: 已消除。
+- **AI 假设（历史，已被用户裁决覆盖）**: 首版依据宪法原则 3 取纯 `[a-zA-Z]`；本次用户明确要求首页
+  「不要太严格」，遂分叉为两套口径。
 
 ## Superseded Entries
 
@@ -241,7 +277,38 @@ Language: zh-CN（与 .codexspec/config.yml 的 language.output 一致）
 - **Entries Added/Changed**: 新增 `CON-006`（匹配指令 MUST NOT 与功能指令关键词产生重复候补）、`DEC-005`（以 `exclude` 排除关键词）；`DEC-004` 降为 `DEC-004-SUPERSEDED`；`OPEN-001` 关闭。
 - **Entries Remaining Open**: OPEN-002（非阻塞，Owner: User）
 
+### Session 2026-09-27 16:19
+
+- **Summary Presented**: 首页校验放宽诉求——用户在首页手输路径需要支持连字符 / 撇号词形，且明确匹配指令路径不额外优化；对应 `OPEN-002` 裁决与 `CON-007` / `DEC-006` 新增。
+- **User Confirmation**: 用户指示「首页查词功能的校验不要太严格了，要能支持『well-known』、『don't』这类格式的单词查询。匹配指令的模式，已经有正则表达式限制只能查询纯英文字母了，所以那个地方的逻辑保持不变，不用再额外优化了」。
+- **Entries Added/Changed**: 新增 `CON-007`（字符集按入口分叉）、`DEC-006`（首页放宽字符集、匹配指令维持纯字母）；`OPEN-002` 关闭。
+- **Entries Remaining Open**: 无（`OPEN-001` / `OPEN-002` 均已关闭）
+- **宪法同步**: 原则 3 同步为分叉口径；宪法版本 1.1.5 → **1.2.0**（MINOR，绑定约束范围变更）。
+
 ## 变更记录
+
+### 2026-09-27 16:33 复验第 9 轮：校验失败清空上一次查询结果
+
+- **触发**: 首页输入 `--` 被校验拦下并给出提示，但结果区仍显示上一次 `don't` 的详解（截图呈现「错误提示 + 旧结果同屏」，且旧结果走的是降级渲染分支，不带朗读 / 同步操作栏）。
+- **用户指示**: 「出现非法字符后，没有将之前的查询结果清空，导致界面比较奇怪」。
+- **已执行**:
+  - `src/use-word-query/index.js`：非法分支在 `setError(invalidReason)` 之外补 `setResult('')`——旧结果与当前输入已无关，必须一并清空。
+  - `src/use-word-query/index.test.js`：新增 2 条——「非法输入清空上一次的查询结果」（先 RED：`expected '上一次查询的详解内容' to be ''` → GREEN）；「AI 调用失败时保留已收到的流式内容」作为回归锁，明确区分「校验失败清空」与「调用失败降级保留」两类 `error`。
+- **边界（未处理）**: 流式查询进行中提交非法输入，旧请求的回调仍会回填 `result`；合法→合法的并发查询存在同类既有缺陷。属需求范围外，未引入请求代次 / abort 机制。
+- **门禁**: `npm test` → **227 passed**（225 → +2）；`npx standard` 退出码 0；`npm run build` 成功。
+- **文档同步**: `CLAUDE.md`（计数 227 + 输入条款补清空要求）、`README.md`（首页查词口径 + 计数）、`CONTEXT.md`（「输入校验」术语补清空与两类 `error` 的区分）、宪法（**1.2.0 → 1.2.1**，原则 3 补条款 + 原则 2 / 6 计数）。
+
+### 2026-09-27 16:19 复验第 8 轮：首页校验放宽（字符集按入口分叉）
+
+- **触发**: 用户在首页手输 `well-known` 被校验拦下，提示「请输入英文单词（仅限英文字母）」（附截图）。
+- **用户指示**: 「首页查词功能的校验不要太严格了，要能支持『well-known』、『don't』这类格式的单词查询。匹配指令的模式，已经有正则表达式限制只能查询纯英文字母了，所以那个地方的逻辑保持不变，不用再额外优化了」。
+- **已执行**:
+  - `src/use-word-query/index.js`：`VALID_WORD_PATTERN`（`^[a-z]+$`）→ `WORD_CHARS_PATTERN`（`^[a-z'-]+$`）+ `HAS_LETTER_PATTERN`（至少含一个字母）；提示文案同步更新，超长文案由「最多 100 个字母」改为「最多 100 个字符」。
+  - `src/use-word-query/index.test.js`：TDD 先 RED（5 failed | 36 passed）；`well-known` / `don't` 由拒绝集合移入放行集合，新增 `'em` / `state-of-the-art` 放行用例与 `-` / `--` / `''` 无字母拒绝用例，并新增查询入口放行用例。
+  - `public/plugin.json`：**未改动**（用户明确要求匹配指令保持纯字母口径）。
+- **门禁**: `npm test` → **225 passed**（218 → +7）；`npx standard` 退出码 0；`npm run build` 成功。
+- **文档同步**: `CLAUDE.md`（计数 225 + 输入条款分叉说明）、`README.md`（首页查词口径 + 计数）、`CONTEXT.md`（「查词」与「输入校验」术语）、宪法（原则 2 / 3 / 6 + 版本 1.1.5 → **1.2.0**，并补正上一版遗漏的底部版本行）。
+- **裁决**: `OPEN-002` 关闭（按入口分叉）；新增 `CON-007` / `DEC-006`。
 
 ### 2026-09-27 14:20 复验第 3 轮：feature 更名 + 指令扩充（用户指示）
 

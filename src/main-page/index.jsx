@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { useWordQuery, normalizeWord } from '../use-word-query/index.js'
+import { useWordQuery, normalizeWord, validateWord } from '../use-word-query/index.js'
 import { useWordAudio } from '../word-audio/index.js'
 import { MarkdownView } from '../markdown-view/index.jsx'
 import { HistoryView } from '../history-view/index.jsx'
@@ -90,7 +90,8 @@ export default function MainPage ({ enterAction }) {
     const normalized = normalizeWord(word)
     if (!normalized) return
     setWord(normalized)
-    queriedWordRef.current = normalized
+    // 非法输入由 query 统一给出提示；此处不更新朗读对象，避免旧结果被读成非法文本
+    if (!validateWord(normalized)) queriedWordRef.current = normalized
     query(normalized, selectedModel || undefined)
   }
 

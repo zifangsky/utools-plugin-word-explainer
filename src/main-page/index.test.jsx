@@ -608,4 +608,21 @@ describe('MainPage 朗读单词', () => {
 
     expect(spoken[0].text).toBe('ephemeral')
   })
+
+  it('非法单词的查询不改变朗读对象（仍读结果对应的单词）', () => {
+    const query = vi.fn()
+    setupUseWordQuery({ query, result: RESULT })
+
+    render(<MainPage />)
+    const input = screen.getByPlaceholderText('输入英文单词...')
+    fireEvent.change(input, { target: { value: 'ephemeral' } })
+    fireEvent.click(screen.getByText('查询'))
+
+    // 非法输入被 Hook 拒绝，屏幕结果未更新 → 朗读对象应保持上一次查询的单词
+    fireEvent.change(input, { target: { value: 'hello world' } })
+    fireEvent.click(screen.getByText('查询'))
+    fireEvent.click(screen.getByTestId('result-play-btn'))
+
+    expect(spoken[0].text).toBe('ephemeral')
+  })
 })

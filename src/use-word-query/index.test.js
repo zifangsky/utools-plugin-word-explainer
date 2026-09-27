@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useWordQuery } from './index.js'
+import { useWordQuery, validateWord } from './index.js'
 
 import { buildMessages } from '../prompt-template/index.js'
 import { queryWordStream } from '../ai-call/index.js'
@@ -79,6 +79,22 @@ describe('useWordQuery', () => {
 
     expect(result.current.error).toContain('网络错误')
     expect(result.current.loading).toBe(false)
+  })
+
+  it('AI 调用失败时保留已收到的流式内容（降级展示，与校验失败不同）', async () => {
+    queryWordStream.mockImplementation(async (_opt, _model, onChunk) => {
+      onChunk('**hello** 的前半段')
+      throw new Error('网络错误')
+    })
+
+    const { result } = renderHook(() => useWordQuery())
+
+    await act(async () => {
+      await result.current.query('hello')
+    })
+
+    expect(result.current.error).toContain('网络错误')
+    expect(result.current.result).toContain('前半段')
   })
 
   it('空字符串不触发查询', async () => {
@@ -271,5 +287,194 @@ describe('保存查词历史门控（getSaveQueryHistory）', () => {
     expect(saveQueryRecord).not.toHaveBeenCalled()
     // result 仍显示剥离后的内容
     expect(result.current.result).toContain('**hello**')
+  })
+})
+
+describe('validateWord — 合法英文单词校验', () => {
+  it('纯字母通过', () => {
+    expect(validateWord('hello')).toBe('')
+  })
+
+  it.each([
+    ['well-known', '连字符'],
+    ["don't", '撇号'],
+    ["'em", '撇号开头'],
+    ['state-of-the-art', '多连字符']
+  ])('%s（含%s）通过', (input) => {
+    expect(validateWord(input)).toBe('')
+  })
+
+  it('恰为长度上限（100 个字符）通过', () => {
+    expect(validateWord('a'.repeat(100))).toBe('')
+  })
+
+  it('空串不报错（空值由调用方的空分支处理）', () => {
+    expect(validateWord('')).toBe('')
+  })
+
+  it.each([
+    ['hello world', '含空格'],
+    ['hello123', '含数字'],
+    ['你好', '含中文'],
+    ['café', '含重音字符'],
+    ['hello_world', '含下划线'],
+    ['hello.', '含标点'],
+    ["don't!", '标点结尾']
+  ])('%s（%s）被拒绝', (input) => {
+    expect(validateWord(input)).not.toBe('')
+  })
+
+  it.each([
+    ['-', '单个连字符'],
+    ['--', '连续连字符'],
+    ["''", '纯撇号']
+  ])('%s（%s，不含字母）被拒绝', (input) => {
+    expect(validateWord(input)).not.toBe('')
+  })
+
+  it('超过长度上限（101 个字符）被拒绝', () => {
+    expect(validateWord('a'.repeat(101))).not.toBe('')
+  })
+})
+
+describe('查询入口的输入校验', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    window.utools = { db: {} }
+  })
+
+  it('含空格的输入不调用 AI，且给出提示', async () => {
+    const { result } = renderHook(() => useWordQuery())
+
+    await act(async () => {
+      await result.current.query('hello world')
+    })
+
+    expect(buildMessages).not.toHaveBeenCalled()
+    expect(queryWordStream).not.toHaveBeenCalled()
+    expect(result.current.error).not.toBe('')
+    expect(result.current.loading).toBe(false)
+  })
+
+  it('中文输入不调用 AI，且给出提示', async () => {
+    const { result } = renderHook(() => useWordQuery())
+
+    await act(async () => {
+      await result.current.query('你好')
+    })
+
+    expect(queryWordStream).not.toHaveBeenCalled()
+    expect(result.current.error).not.toBe('')
+  })
+
+  it('含数字的输入不调用 AI，且给出提示', async () => {
+    const { result } = renderHook(() => useWordQuery())
+
+    await act(async () => {
+      await result.current.query('hello123')
+    })
+
+    expect(queryWordStream).not.toHaveBeenCalled()
+    expect(result.current.error).not.toBe('')
+  })
+
+  it('超过长度上限的输入不调用 AI，且给出提示', async () => {
+    const { result } = renderHook(() => useWordQuery())
+
+    await act(async () => {
+      await result.current.query('a'.repeat(101))
+    })
+
+    expect(queryWordStream).not.toHaveBeenCalled()
+    expect(result.current.error).not.toBe('')
+  })
+
+  it('归一化后合法的输入（首尾空格 + 首字母大写）仍可正常查询', async () => {
+    queryWordStream.mockImplementation(async () => {})
+
+    const { result } = renderHook(() => useWordQuery())
+
+    await act(async () => {
+      await result.current.query('  Hello  ')
+    })
+
+    expect(buildMessages).toHaveBeenCalledWith('hello')
+    expect(result.current.error).toBe('')
+  })
+
+  it('连字符 / 撇号词可正常查询', async () => {
+    queryWordStream.mockImplementation(async () => {})
+
+    const { result } = renderHook(() => useWordQuery())
+
+    await act(async () => {
+      await result.current.query('Well-Known')
+    })
+    expect(buildMessages).toHaveBeenCalledWith('well-known')
+    expect(result.current.error).toBe('')
+
+    await act(async () => {
+      await result.current.query("Don't")
+    })
+    expect(buildMessages).toHaveBeenCalledWith("don't")
+    expect(result.current.error).toBe('')
+  })
+
+  it('空输入不查询也不给出提示（保持既有静默行为）', async () => {
+    const { result } = renderHook(() => useWordQuery())
+
+    await act(async () => {
+      await result.current.query('   ')
+    })
+
+    expect(queryWordStream).not.toHaveBeenCalled()
+    expect(result.current.error).toBe('')
+  })
+
+  it('非法输入之后再查询合法单词，提示被清空', async () => {
+    queryWordStream.mockImplementation(async () => {})
+
+    const { result } = renderHook(() => useWordQuery())
+
+    await act(async () => {
+      await result.current.query('hello world')
+    })
+    expect(result.current.error).not.toBe('')
+
+    await act(async () => {
+      await result.current.query('hello')
+    })
+    expect(result.current.error).toBe('')
+  })
+
+  it('非法输入不写入查词历史', async () => {
+    const { result } = renderHook(() => useWordQuery())
+
+    await act(async () => {
+      await result.current.query('hello world')
+    })
+
+    expect(parseJsonFromContent).not.toHaveBeenCalled()
+    expect(saveQueryRecord).not.toHaveBeenCalled()
+  })
+
+  it('非法输入清空上一次的查询结果', async () => {
+    queryWordStream.mockImplementation(async (_opt, _model, onChunk) => {
+      onChunk('上一次查询的详解内容')
+    })
+
+    const { result } = renderHook(() => useWordQuery())
+
+    await act(async () => {
+      await result.current.query("don't")
+    })
+    expect(result.current.result).not.toBe('')
+
+    await act(async () => {
+      await result.current.query('--')
+    })
+
+    expect(result.current.result).toBe('')
+    expect(result.current.error).not.toBe('')
   })
 })
