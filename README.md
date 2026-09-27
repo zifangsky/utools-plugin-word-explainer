@@ -38,8 +38,9 @@ npm run deploy
 3. 填写版本号、版本说明、插件介绍与截图，提交审核
 
 > `dist/` 由 `vite build` 生成，内容为构建产物 + 从 `public/` 拷入的 `plugin.json` / `logo.png` / `preload/`。
-> 构建前会先清空 `public/assets` 与 `public/index.html`，避免历史产物被 Vite 的 `copyPublicDir`
-> 回灌进发布目录。
+> 构建前 `prebuild` 会先清空 `public/assets` 与 `public/index.html`，避免历史产物被 Vite 的
+> `copyPublicDir` 回灌进发布目录。**`deploy` MUST 经 `npm run build` 调用**（不可直接写 `vite build`），
+> 否则 `prebuild` 生命周期不触发、清空失效。
 
 开发流程：
 1. 本地修改代码后，启动开发服务器 `npm run dev`
@@ -47,6 +48,20 @@ npm run deploy
 3. 点击"卸载 (开发模式)"按钮（将当前工程从 uTools 开发模式卸载）
 4. 点击"安装 (开发模式)"按钮（将当前工程以开发模式重新安装到 uTools）
 5. 点击"打开"按钮（运行 `plugin.json` 配置的首个功能指令），验证实际运行效果
+
+> 改 `public/plugin.json` 后同样需要「卸载（开发模式）」→「安装（开发模式）」：`npm run dev`
+> 只热更新前端代码、不刷新指令，重启 uTools 也无效。平台约束与实测取证见 `docs/utools-platform.md`。
+
+## 架构
+
+- **依赖方向**（单向、无环）：`main-page → useWordQuery / markdown-view / model-preference / history-view / sync / word-audio`；`useWordQuery → prompt-template / ai-call / query-history`；`history-view → query-history / markdown-view / word-audio`。MUST NOT 引入循环依赖。
+- **查词入口**：首页「查询」按钮 / Enter 与匹配指令进入后自动查询，两条入口汇于唯一的 `useWordQuery().query()`，统一经 `normalizeWord()`（去首尾空格 + 转小写）→ `validateWord()` 后调用 AI，使 AI 提示词、查词历史与 flomo 笔记标题三处一致。
+- **MCP 工具**：在 `public/preload/` 中经 `utools.registerTool('explain_word', handler)` 注册，handler 流式调用 AI + 每 2s 线性进度上报（单次上限 15s）。preload 运行于主进程（CommonJS），`src/` 运行于 webview（ESM），两份实现 MUST 语义一致、同步修改。
+- **AI 调用**：流式模式（`utools.ai(option, streamCallback)`），每个 chunk 局部更新 state，边接收边渲染。
+- **渲染**：自定义 markdown 解析器，支持 3 层嵌套列表；`---` 渲染为分割线，`**粗体**` 加粗。
+- **存储**：`utools.dbStorage`（偏好：`preferredModel` / `saveQueryHistory` / `flomoApiEndpoint` / `flomoTags`）+ `utools.db`（查词历史：摘要文档 + 详情文档）。
+- ⚠️ **性能红线**：`utools.dbStorage.getItem()` 是**同步 IPC**（`ipcRenderer.sendSync` 配对），读取期间**渲染进程完全阻塞**。契约：① 禁止在 render / mount 期**批量**读取；② 同一 key 每次挂载**只读一次**（用 ref 复用）；③ 仅子页面使用的数据 MUST 延迟到进入该页面时再加载 —— 当前 `allAiModels()`（内含全库前缀扫描 + 远程 `/model/list` 请求）与 `flomoTags` 已下放至设置页加载。
+- ⚠️ **匹配指令路径的敏感性**：经匹配指令进入时，启动期开销全部落在「进入之后」的感知窗口内，而手动进入再点查询则无感。因此**启动路径上的任何额外 IO / 请求都会被用户直接感知为「进去后卡住」**。
 
 ## 项目结构
 
@@ -71,10 +86,35 @@ assets/
 ├── flomo_favicon.ico           # flomo 同步按钮图标
 public/
 ├── logo.png                    # uTools 插件 Logo（运行时）
-├── plugin.json                 # 插件配置
-└── preload/                    # Node.js preload 脚本
+├── plugin.json                 # 插件配置（唯一源；dist/ 下副本为构建产物）
+└── preload/
+    ├── services.js             # Node.js 能力注入 + require tools.js
+    ├── tools.js                # MCP 工具注册 + createExplainWordHandler
+    └── prompt.js               # CommonJS 版 systemPrompt + buildMessages
 dist/                           # 生产构建产物（发布到 uTools 插件市场时选择该目录）
+docs/                           # uTools 平台笔记、PRD、agent 工具说明
+.codexspec/                     # CodexSpec 治理工作区（宪法 / 规格 / 模板）
 ```
+
+## 分支与提交规范（红线）
+
+- **禁止直接提交到 `main`**，所有修改 MUST 经 PR 合并（仓库已开启分支保护）
+- 分支命名按改动类型：`feat/`（新功能）、`fix/`（缺陷）、`docs/`（文档）、`chore/`（版本 / 构建 / 杂项）、`refactor/`（重构）、`test/`（测试）、`style/`（样式）
+- 提交信息遵循 Conventional Commits（`feat:` / `fix:` / `docs:` / `refactor:` / `test:` / `chore:`）
+- 提交前 MUST 执行 `git branch --show-current` 确认为分支；合并后删除源分支
+- 完整治理条款见 `.codexspec/memory/constitution.md`
+
+提交前检查：`npx standard` 通过、`npm test` 全绿、无新增循环依赖、preload（CommonJS）与 `src`（ESM）逻辑同步、新增 / 修改模块已配 `index.test.js`、文档测试计数与结构树已同步。
+
+## 相关文档
+
+| 文档 | 内容 |
+|------|------|
+| `CONTEXT.md` | 领域术语与边界 |
+| `docs/utools-platform.md` | uTools 平台契约与实测取证（指令注册、`over` / `regex`、关键词重叠） |
+| `docs/agents/` | issue-tracker / triage-labels / domain / code-review-graph |
+| `.codexspec/memory/constitution.md` | 项目宪法（最高权威） |
+| `releases/` | 版本发布说明与插件介绍 |
 
 ## 技术栈
 
