@@ -82,4 +82,34 @@ describe('MarkdownView', () => {
     expect(container.querySelector('ul')).not.toBeNull()
     expect(container.querySelector('p')).not.toBeNull()
   })
+
+  it('firstParagraphTrailing 渲染在首个段落内、原文之后', () => {
+    const md = '**ephemeral** /ɪˈfemərəl/ (英)\n\n---\n\n正文'
+    const { container } = render(
+      <MarkdownView content={md} firstParagraphTrailing={<button data-testid='trail'>▶</button>} />
+    )
+
+    const paragraphs = container.querySelectorAll('.md-paragraph')
+    expect(paragraphs[0].querySelector('[data-testid="trail"]')).not.toBeNull()
+    // 位于原文之后而非之前
+    expect(paragraphs[0].textContent).toContain('ɪˈfemərəl')
+    expect(paragraphs[0].lastElementChild.getAttribute('data-testid')).toBe('trail')
+    // 其他段落不受影响
+    expect(paragraphs[1].querySelector('[data-testid="trail"]')).toBeNull()
+  })
+
+  it('未传 firstParagraphTrailing 时不渲染额外节点', () => {
+    const { container } = render(<MarkdownView content='**ephemeral** /ɪˈfemərəl/' />)
+
+    expect(container.querySelector('[data-testid="trail"]')).toBeNull()
+    expect(container.querySelectorAll('.md-paragraph').length).toBe(1)
+  })
+
+  it('首个块不是段落时不渲染 firstParagraphTrailing（仅音标行适用）', () => {
+    const { container } = render(
+      <MarkdownView content={'- 项目1\n- 项目2'} firstParagraphTrailing={<span data-testid='trail' />} />
+    )
+
+    expect(container.querySelector('[data-testid="trail"]')).toBeNull()
+  })
 })

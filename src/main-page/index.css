@@ -157,6 +157,53 @@
   margin-right: 8px;
 }
 
+/* ---- 结果区朗读按钮（内联在首行「单词 + 音标」末尾） ---- */
+
+.result-play-btn {
+  margin-left: 8px;
+  padding: 0;
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  font-size: 9px;
+  line-height: 1;
+  color: #1677ff;
+  background: transparent;
+  border: 1px solid #1677ff;
+  border-radius: 50%;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.result-play-btn:hover {
+  background: #1677ff;
+  color: #fff;
+}
+
+.result-play-btn:active {
+  opacity: 0.7;
+}
+
+.result-play-btn.playing {
+  background: #1677ff;
+  color: #fff;
+  animation: resultPlayPulse 0.7s ease-in-out infinite;
+}
+
+@keyframes resultPlayPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.45;
+  }
+}
+
 /* ---- flomo 同步按钮 ---- */
 
 .sync-flomo-btn {
@@ -338,6 +385,17 @@
   .sync-flomo-btn:hover {
     background: #555;
     border-color: #888;
+  }
+
+  .result-play-btn {
+    color: #4fa3ff;
+    border-color: #4fa3ff;
+  }
+
+  .result-play-btn:hover,
+  .result-play-btn.playing {
+    background: #4fa3ff;
+    color: #1a1a1a;
   }
 
   .sync-flomo-btn.syncing {

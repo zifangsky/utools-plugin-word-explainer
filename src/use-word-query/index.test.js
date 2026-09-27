@@ -92,6 +92,55 @@ describe('useWordQuery', () => {
     expect(queryWordStream).not.toHaveBeenCalled()
   })
 
+  it('归一化：首字母大写与首尾空格在调用 AI 前被处理', async () => {
+    queryWordStream.mockImplementation(async () => {})
+
+    const { result } = renderHook(() => useWordQuery())
+
+    await act(async () => {
+      await result.current.query('  Hello  ')
+    })
+
+    expect(buildMessages).toHaveBeenCalledWith('hello')
+  })
+
+  it('归一化：仅含空格的输入不触发查询', async () => {
+    const { result } = renderHook(() => useWordQuery())
+
+    await act(async () => {
+      await result.current.query('   ')
+    })
+
+    expect(buildMessages).not.toHaveBeenCalled()
+    expect(queryWordStream).not.toHaveBeenCalled()
+  })
+
+  it('归一化：保存查词记录时使用小写去空格的单词', async () => {
+    const fullContent = '**Hello** /həˈləʊ/\n\n解释内容'
+    queryWordStream.mockImplementation(async (_opt, _model, onChunk) => {
+      onChunk(fullContent)
+    })
+    parseJsonFromContent.mockReturnValue({
+      parsed: { word: 'hello', phonetic: 'həˈləʊ', chineseMeanings: ['你好'] },
+      cleanContent: '**Hello** /həˈləʊ/\n\n解释内容'
+    })
+
+    const { result } = renderHook(() => useWordQuery())
+
+    await act(async () => {
+      await result.current.query('  Hello  ')
+    })
+
+    expect(saveQueryRecord).toHaveBeenCalledWith(
+      window.utools.db,
+      'hello',
+      'həˈləʊ',
+      ['你好'],
+      '**Hello** /həˈləʊ/\n\n解释内容',
+      undefined
+    )
+  })
+
   it('model 参数传递给 queryWordStream', async () => {
     queryWordStream.mockImplementation(async () => {})
 

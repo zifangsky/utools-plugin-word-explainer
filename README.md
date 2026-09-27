@@ -48,9 +48,10 @@ src/
 ├── markdown-view/              # Markdown 富文本渲染
 ├── model-preference/           # 模型偏好持久化
 ├── history-preference/         # 保存查词历史开关持久化
-├── use-word-query/             # 查询状态机 Hook（含自动保存查词历史，受 saveQueryHistory 开关门控）
+├── use-word-query/             # 查询状态机 Hook（输入归一化 + 自动保存查词历史，受 saveQueryHistory 开关门控）
 ├── query-history/              # 查词历史数据层（save/getHistoryRecords/getDetailRecord/deleteQueryRecords）
 ├── history-view/               # 查词历史 UI（搜索、时间筛选、单词卡片、详情）
+├── word-audio/                 # 英文单词朗读 Hook（SpeechSynthesis，主界面与历史共用）
 ├── mcp-tools/                  # MCP 工具 handler
 ├── sync/                       # flomo 同步（数据层 + useFlomoSync Hook）
 assets/
@@ -64,7 +65,7 @@ public/
 
 ## 技术栈
 
-- Vitest 4 + Testing Library (173 个测试)
+- Vitest 4 + Testing Library (197 个测试)
 - uTools AI API（流式调用）
 - uTools dbStorage（偏好持久化）
 - uTools MCP Tools（registerTool）
