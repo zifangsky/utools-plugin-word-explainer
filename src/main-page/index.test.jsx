@@ -365,7 +365,7 @@ describe('MainPage 匹配指令进入', () => {
     getPreferredModel.mockReturnValue(null)
   })
 
-  const regexAction = (payload) => ({ code: 'explain-word', type: 'regex', payload })
+  const regexAction = (payload) => ({ code: 'wordMatch', type: 'regex', payload })
 
   it('匹配指令进入 → 输入框预填该单词并自动发起查询', () => {
     const query = vi.fn()

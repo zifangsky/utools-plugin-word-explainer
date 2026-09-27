@@ -14,23 +14,37 @@ npm run deploy   # 构建 + 复制产物到 public/（uTools 应用商店打包�
 npm test         # 运行 149 个测试 (vitest)
 ```
 
-> **⚠️ 改了 `public/plugin.json` 后：完全退出 uTools 再重启即可生效**
+> **⚠️ 改了 `public/plugin.json` 后：在 uTools 开发者工具中「卸载（开发模式）」再重新安装**
 >
-> 依据（实测）：uTools **不把开发插件的 `features` 持久化到数据库**，只保存 `plugin.json`
-> 的**路径**，指令列表在**启动时**从该文件现读。自查方法 —— 在
-> `%APPDATA%\uTools\database` 中检索：商店版插件有 `//feature/<pluginId>/<code>` 记录，
-> 本插件 `ztwpfbsl` **一条都没有**（连旧指令的 label 也搜不到）。
+> 已确认的两条事实（均实测）：
 >
-> 由此推出两条结论：
+> 1. **`npm run dev` 与指令注册无关** —— 它只热更新**前端代码**，不注册、也不刷新指令。
+>    重启它永远无法让新指令出现（这是最容易走的一段弯路）。
+> 2. **让新 `plugin.json` 生效的正确操作**：在 uTools 开发者工具中对本项目
+>    「**卸载（开发模式）**」→ 再「**安装（开发模式）**」。**不需要重启 uTools**。
+>    呼出热键为 `Alt+Space`。
 >
-> 1. **`npm run dev` 与指令注册无关**——它只热更新前端代码，重启它不会让新指令出现；
-> 2. **让新 `plugin.json` 生效只需「完全退出 uTools + 重新启动」**，不必卸载重装。
->    「接入开发」只在首次添加项目或项目路径变更时才需要。热键为 `Alt+Space`。
+> **⚠️ AI 侧约定（用户明确要求）**：**不要结束 uTools 进程**。uTools 常驻运行、无需手动关闭；
+>    AI 修改配置后只需重启本地开发服务（`npm run dev`），uTools 侧的卸载 / 重装由用户自行执行。
 >
-> **验证手段**：uTools 开发者工具的本项目详情页有「功能 / 匹配」两个标签，「匹配」页会列出
-> 解析到的匹配指令（类型、正则、最少 / 最多字符数）。页面上能看到新指令 = `plugin.json`
-> 已被正确解析；此时若主搜索框仍匹配不到，才需要重新「接入开发」（或先「卸载（开发模式）」
-> 再接入）。
+> **自查手段**：uTools 开发者工具的本项目详情页有「功能 / 匹配」两个标签，「匹配」页会列出解析
+> 到的匹配指令（类型、正则、最少 / 最多字符数）。**页面上能看到 = `plugin.json` 已被正确解析**，
+> 此时可排除配置语法问题。
+>
+> **不要用「磁盘检索」判断指令是否注册**：uTools **不把开发插件的 `features` 持久化到数据库**，
+> 只保存 `plugin.json` 的**路径**。商店版插件有 `//feature/<pluginId>/<code>` 记录，本插件
+> `ztwpfbsl` 一条都没有（连旧指令的 label 也搜不到）——那是**常态，不构成未注册的证据**。
+>
+> **匹配指令的配置形态**（对照官方示例 *plugin.json 配置完整示例*）：
+>
+> - `regex` 指令字段为 `type` / `label`（必须）/ `match`（**含前后斜杠的字符串**）/ `minLength` /
+>   `maxLength`；`over` 指令字段为 `type` / `label` / `exclude`（可选）/ `minLength` / `maxLength`。
+> - 官方示例的 feature `code` **自带连字符**（`test-regex`、`test-over`、`test-files`），故
+>   `code` 中含 `-` 无害；`cmds` 支持**字符串与对象混排**（生产插件如
+>   `UtilityTools.jsonOper` 即 `["JSON处理", {regex 对象}]`）。
+> - 当前本项目在 `wordMatch` feature 下同时挂了 `regex`（`单词详解`）与 `over`
+>   （`单词详解（复制即查）`）两条指令，用于确定「复制单词后呼出 uTools」场景下真正生效的类型；
+>   结论明确后应合并为单条、避免候选中出现两个同类条目。
 >
 > 另注：`public/` 是 uTools 实际加载的目录，`dist/` 是 `vite build` 产物（构建时会把 `public/`
 > 的内容一并拷入）。**`plugin.json` 的唯一源是 `public/plugin.json`**，不要改 `dist/` 下的副本。

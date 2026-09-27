@@ -24,7 +24,7 @@ Language: zh-CN（与 .codexspec/config.yml 的 language.output 一致）
 
 ## 3. uTools 平台配置
 
-- [x] 3.1 **[P]** 在 `public/plugin.json` 的 `features` 数组追加一项，内容严格等于 plan.md「`public/plugin.json` 新增配置契约」：`code` 为 `explain-word`，`cmds` 含 `{ type: "regex", label: "单词详解", match: "/^[a-zA-Z]+$/", minLength: 1, maxLength: 64 }`。MUST NOT 改动既有 `explain` feature 与 `tools` 配置。Covers: REQ-001、DEC-001、DEC-003、OUT-004; Plan: P5 / 配置契约
+- [x] 3.1 **[P]** 在 `public/plugin.json` 的 `features` 数组追加一项，内容严格等于 plan.md「`public/plugin.json` 新增配置契约」：`code` 为 `wordMatch`，`cmds` 含 `{ type: "regex", label: "单词详解", match: "/^[a-zA-Z]+$/", minLength: 1, maxLength: 64 }`。MUST NOT 改动既有 `explain` feature 与 `tools` 配置。Covers: REQ-001、DEC-001、DEC-003、OUT-004; Plan: P5 / 配置契约
 - [x] 3.2 校验配置：用 node 解析 `public/plugin.json` 确认 JSON 合法、`features` 长度由 1 变为 2、新 feature 的字段值与上面逐项一致、既有 feature 的 `code`/`cmds` 与改动前相同（可用 `git diff` 佐证）。Covers: REQ-001、OUT-004; Plan: P5 验证
 
 ## 4. 文档与代码同步
@@ -115,7 +115,7 @@ Language: zh-CN（与 .codexspec/config.yml 的 language.output 一致）
 |------|------|
 | 1.3 | `src/App.jsx` 新增 `enterAction` state（初值 `null`）与 prop 透传，净改动 2 行新增 + 2 行修改 |
 | 2.3 | `src/main-page/index.jsx` 新增 `enterAction` prop 与自动查询 effect，守卫为空值安全形式，模型来源为 `getPreferredModel()`（PLD-3），未复用 `handleQuery`（PLD-4） |
-| 3.1 | `public/plugin.json` 的 `features` 由 1 项增至 2 项，新增 `explain-word` |
+| 3.1 | `public/plugin.json` 的 `features` 由 1 项增至 2 项，新增 `wordMatch` |
 | 3.2 | 脚本逐项校验：JSON 合法、`features` 长度 = 2、新 feature 的 `code`/`type`/`label`/`match`/`minLength`/`maxLength` 全部匹配、既有 `explain` feature 与 `tools` 与改动前逐字符一致、正则对 12 组输入的判定与 spec REQ-001 期望逐条一致 → **ALL CHECKS PASSED** |
 | 4.1 / 4.2 | 按行号脚本（显式 UTF-8）完成。`CLAUDE.md`：134 → 135 行；`README.md`：68 → 73 行（触发方式章节展开为功能指令/匹配指令两段） |
 | 4.3 | 回读校验：两份文档 `grep "141"` 无残留；`149` 分别出现于 `CLAUDE.md:14` 与 `README.md:69`；两份文件头部内容完好 |

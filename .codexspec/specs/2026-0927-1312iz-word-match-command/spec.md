@@ -11,7 +11,7 @@ Language: zh-CN（与 .codexspec/config.yml 的 language.output 一致）
 
 ### Requirement: REQ-001 注册单词匹配指令
 
-插件 MUST 在 `public/plugin.json` 的 `features` 数组中新增一个功能项，`code` 为 `explain-word`，其 `cmds` 包含一条 `type` 为 `"regex"` 的匹配指令，`label` 为「单词详解」。该匹配指令 MUST 仅在主输入框内容为单个纯英文单词时命中。
+插件 MUST 在 `public/plugin.json` 的 `features` 数组中新增一个功能项，`code` 为 `wordMatch`，其 `cmds` 包含一条 `type` 为 `"regex"` 的匹配指令，`label` 为「单词详解」。该匹配指令 MUST 仅在主输入框内容为单个纯英文单词时命中。
 
 Sources: NEED-001, CON-001, CON-002, CON-003, DEC-001, DEC-003
 
@@ -20,7 +20,7 @@ Sources: NEED-001, CON-001, CON-002, CON-003, DEC-001, DEC-003
 #### Scenario: 单个英文单词命中匹配指令
 
 - **WHEN** uTools 主输入框内容为单个纯英文单词（仅含 `[a-zA-Z]`，长度 1–64）
-- **THEN** 候选中出现一条 `label` 为「单词详解」的匹配指令，其归属功能 `code` 为 `explain-word`
+- **THEN** 候选中出现一条 `label` 为「单词详解」的匹配指令，其归属功能 `code` 为 `wordMatch`
 
 #### Scenario: 非单词内容不命中
 
@@ -40,8 +40,8 @@ Sources: NEED-002, CON-003
 
 #### Scenario: 匹配指令进入时动作含匹配数据
 
-- **WHEN** 用户通过 `explain-word` 的匹配指令进入插件
-- **THEN** 主界面可获取到 `code` 为 `explain-word`、`type` 为 `"regex"`、`payload` 为匹配到的单词字符串
+- **WHEN** 用户通过 `wordMatch` 的匹配指令进入插件
+- **THEN** 主界面可获取到 `code` 为 `wordMatch`、`type` 为 `"regex"`、`payload` 为匹配到的单词字符串
 
 #### Scenario: 功能指令进入时动作不含匹配数据
 
@@ -129,7 +129,7 @@ uTools 提供「匹配指令」机制（`plugin.json` → `features[].cmds[]` �
 
 涉及文件：
 
-- `public/plugin.json` —— 新增 `explain-word` feature 与 regex 匹配指令
+- `public/plugin.json` —— 新增 `wordMatch` feature 与 regex 匹配指令
 - `src/App.jsx` —— 当前 `onPluginEnter` 回调丢弃了进入动作，需使其可被主界面感知
 - `src/main-page/index.jsx` —— 接收进入动作，命中匹配指令时预填并自动查询
 - `src/main-page/index.test.jsx` —— 新增行为测试

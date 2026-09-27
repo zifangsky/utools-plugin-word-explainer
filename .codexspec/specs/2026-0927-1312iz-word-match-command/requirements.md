@@ -69,10 +69,10 @@ Language: zh-CN（与 .codexspec/config.yml 的 language.output 一致）
 
 ## Decisions
 
-### DEC-001: 匹配指令独立成新 feature（`code: explain-word`）
+### DEC-001: 匹配指令独立成新 feature（`code: wordMatch`）
 
 - **Status**: confirmed
-- **Decision**: 在 `public/plugin.json` 的 `features` 数组中新增一个 feature（`code: "explain-word"`，仅含 regex 匹配指令），现有 `explain` feature 完全不动。
+- **Decision**: 在 `public/plugin.json` 的 `features` 数组中新增一个 feature（`code: "wordMatch"`，承载「单词详解」指令），现有 `explain` feature 完全不动。**初始形态**为单条 `regex` 匹配指令；2026-09-27 真实环境复验未生效后，按用户指示更名为 `wordMatch`（原名 `explain-word`）并追加指令。当前实际形态见文末「变更记录」。原文中 `explain` 与 `wordMatch` 的并列审查记录（`review-spec.md` / `review-plan.md` / `review-tasks.md`）为**重命名前的审计快照**，其中的 `explain-word` 字样按历史记录保留，不追溯修改。
 - **Alternatives Rejected**: 在现有 `explain.cmds` 中直接追加 regex 对象（改动行数更少，但需靠 `type === 'regex'` 判别，且把功能指令与匹配指令混在同一 feature 内）。
 - **Reason**: 与 uTools 官方文档「plugin.json 配置完整示例」的写法一致（匹配指令各自独立成 feature，如 `test-regex` / `test-over` / `test-files` / `test-img` / `test-window`）；`onPluginEnter` 收到的 `code` 唯一，判别无歧义；现有功能指令零回归风险。
 - **User Evidence**: 设计确认题「匹配指令的配置结构怎么放？」→ 用户选择「新建独立 feature（推荐）」
@@ -160,3 +160,19 @@ Language: zh-CN（与 .codexspec/config.yml 的 language.output 一致）
 - **User Confirmation**: 明确选择「确认，继续生成 spec」；对宪法计数选择「本次一并修正（推荐）」。
 - **Entries Confirmed**: NEED-001, NEED-002, CON-001, CON-002, CON-003, CON-004, CON-005, DEC-001, DEC-002, DEC-003, DEC-004, OUT-001, OUT-002, OUT-003, OUT-004
 - **Entries Remaining Open**: OPEN-001, OPEN-002（均非阻塞，不阻断后续生成）
+
+## 变更记录
+
+### 2026-09-27 14:20 复验第 3 轮：feature 更名 + 指令扩充（用户指示）
+
+- **触发**: 用户在真实 uTools 中复验，候补列表仍未出现「单词详解」；但开发者工具本项目详情页的「匹配」标签**已正确显示**解析结果（`特定文本` → `单词详解`；`/^[a-zA-Z]+$/`；最少 1 ~ 最多 64）。
+- **用户指示**: ① 去掉 `code` 中的 `-`，`explain-word` 改名 `wordMatch`；② 为匹配指令补配一条「当前插件的指令」；③ 插件本地环境重启后**无需重启 uTools**，重新在开发者工具中「卸载（开发模式）」并安装即可；④ **AI 不得自动关闭 uTools 进程**。
+- **已执行**:
+  - `code`：`explain-word` → `wordMatch`；本文件 DEC-001 与 `spec.md` / `plan.md` / `tasks.md`、测试桩（`src/App.test.jsx`、`src/main-page/index.test.jsx`）同步更名。
+  - `cmds` 由 1 条扩为 3 条：字符串指令 `单词详解` + `regex`（`label: 单词详解`）+ `over`（`label: 单词详解（复制即查）`）。
+- **证据评估（重要）**: 用户提出的两条假设**在证据上均不成立**，但已按要求执行：
+  - 「`-` 导致不生效」——官方 `plugin.json 配置完整示例` 中 feature `code` 自带连字符（`test-regex` / `test-over` / `test-files` / `test-img` / `test-window`）；
+  - 「未配置 `label`」——`regex` 对象的 `label` 自首版即存在（`"label": "单词详解"`），且开发者工具「匹配」页正常显示该 label。
+- **新增假设（本轮由 `over` 探针并行验证）**: 用户截图中的「匹配结果」列表内三条第三方指令**全为 `over` 类型**（「汇率换算 - 选中文本后计算」「翻译文本：用于快速翻译复制的文本」「搜索文本片段」），而 `over` 正是官方示例中「任意文本（含复制粘贴）匹配」的机制（`test-over`）。故保留 `over` 指令作为探针，一次性判定该场景下 `regex` 与 `over` 哪条真正生效。
+- **待收敛**: 探针结论明确后，`wordMatch.cmds` 应合并为单条生效指令，移除冗余条目（避免候补中出现两个同类「单词详解」）。
+- **对 REQ-001 的影响**: 无。`regex` 的 `match` 与 `minLength` / `maxLength` 未变，命中行为已用脚本对 12 组输入逐条核验，与 REQ-001 期望一致。

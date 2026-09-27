@@ -35,7 +35,7 @@ describe('App 根组件', () => {
 
   it('onPluginEnter 携带的进入动作被原样透传给 MainPage', () => {
     const handlers = setupUtools()
-    const action = { code: 'explain-word', type: 'regex', payload: 'ephemeral' }
+    const action = { code: 'wordMatch', type: 'regex', payload: 'ephemeral' }
 
     render(<App />)
     act(() => { handlers.onEnter(action) })
@@ -61,7 +61,7 @@ describe('App 根组件', () => {
     act(() => { handlers.onOut() })
     expect(screen.queryByTestId('main-page-mock')).not.toBeInTheDocument()
 
-    act(() => { handlers.onEnter({ code: 'explain-word', type: 'regex', payload: 'hello' }) })
+    act(() => { handlers.onEnter({ code: 'wordMatch', type: 'regex', payload: 'hello' }) })
     expect(screen.getByTestId('main-page-mock')).toBeInTheDocument()
   })
 })

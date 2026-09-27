@@ -17,13 +17,21 @@
       ]
     },
     {
-      "code": "explain-word",
+      "code": "wordMatch",
       "explain": "匹配指令 — 主输入框为单个英文单词时，直接进入插件查询该单词",
       "cmds": [
+        "单词详解",
         {
           "type": "regex",
           "label": "单词详解",
           "match": "/^[a-zA-Z]+$/",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        {
+          "type": "over",
+          "label": "单词详解（复制即查）",
+          "exclude": "/[^a-zA-Z\\s]/",
           "minLength": 1,
           "maxLength": 64
         }
