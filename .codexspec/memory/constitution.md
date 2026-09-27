@@ -1,6 +1,28 @@
 <!--
 SYNC IMPACT REPORT
 ==================
+Version: 1.3.0 → 1.3.1
+Bump Rationale: PATCH — 事实性修正，无原则增删或重定义。① 原则 1 的依赖方向仍写旧目录名 `MainPage`（v0.9.0 已更名为 `main-page`），且漏列 `sync` / `word-audio` 两个下游依赖，与本宪法自己指定的权威架构参考 `README.md`「架构」不一致；② 「文档要求」把 `.github/issues/` 列为过程文档存放位置，但该目录整体被 `.gitignore` 的 `.*/` 规则忽略、从未入库，表述与实际不符。两处均为使既有条款与实际实现 / 文档对齐，属非语义修正，故取 PATCH。
+
+Changes:
+- Modified: 原则 1「模块边界与无环依赖」——依赖方向 `MainPage` → `main-page`，并补 `sync` / `word-audio`，与 `README.md`「架构」逐字对齐
+- Modified: 文档要求——过程文档存放位置表述更正为 `docs/`；`.github/issues/` 标注为未入库的本机草稿区
+- Modified: 顶部版本号 1.3.0 → 1.3.1；底部版本行同步；最后修订 2026-09-27
+
+Template Consistency Check:
+- .codexspec/templates/docs/tasks-template-simple.md: ✅ aligned（无计数引用）
+- .codexspec/templates/docs/tasks-template-detailed.md: ✅ aligned（无计数引用）
+- README.md: ✅ aligned（测试计数 227、结构树与依赖方向为权威参考；本次以其为准反向修正宪法）
+- CONTEXT.md: ✅ aligned（无计数引用）
+- docs/utools-platform.md: ✅ aligned（无计数引用）
+- docs/agents/code-review-graph.md: ✅ aligned（已启用工具清单、索引更新方式更正为本机实际配置）
+
+Deferred TODOs:
+- 「合并后 MUST 删除源分支」与历史保留发布分支的做法仍存冲突（见 `.workbuddy/memory/MEMORY.md`），本次未处理
+
+---
+
+历史记录 (Historical)
 Version: 1.2.1 → 1.3.0
 Bump Rationale: MINOR — 治理文档集实质变更。原「架构 + 红线」权威参考 `CLAUDE.md`（含 uTools 平台实测取证）随项目弃用 Claude Code 而移除，其内容迁移至 `README.md`（架构 / 分支红线 / 文档索引）与新增的 `docs/utools-platform.md`（平台契约与实测取证）、`docs/agents/code-review-graph.md`（图谱工具用法）。据此重定义原则 6 的文档同步对象、代码审查的权威架构参考、PR 检查项与「必含文档」清单，并补齐分支命名前缀表。属章节的实质性变更而非措辞澄清，故取 MINOR。
 
@@ -203,9 +225,9 @@ Changes:
 - 每个功能模块 MUST 遵循 `src/<module>/index.js + index.test.js` 形态（含 UI 的模块可附 `index.css`）。
 - 模块接口 MUST 保持简洁、可独立 mock 外部依赖进行单元测试。
 - 依赖方向 MUST 保持单向、自上而下：
-  `MainPage → useWordQuery / markdown-view / model-preference / history-view`；
+  `main-page → useWordQuery / markdown-view / model-preference / history-view / sync / word-audio`；
   `useWordQuery → prompt-template / ai-call / query-history`；
-  `history-view → query-history / markdown-view`。
+  `history-view → query-history / markdown-view / word-audio`。
 - MUST NOT 引入循环依赖。
 - 理由：README.md「架构」章节已固化该依赖方向且无环；循环依赖会破坏测试隔离与构建可维护性，且历史上
   mock 曾掩盖跨模块参数错误（见原则 2）。
@@ -376,7 +398,8 @@ Changes:
   triage-labels / domain / code-review-graph）、`releases/vX.Y.Z.md`（发布说明）
 - 新增模块 MUST 同步 `README.md` 测试计数与结构树
 - 架构决策 SHOULD 记录于 `docs/adr/`（ADR）
-- 过程文档（PRD / Issue 切片）存放于 `docs/` 与 `.github/issues/`
+- 过程文档（PRD / Issue 切片）存放于 `docs/`；`.github/issues/` 为未入库的本机草稿区
+  （整体被 `.gitignore` 的 `.*/` 规则忽略，不受版本控制）
 
 ## 治理 (Governance)
 
@@ -386,4 +409,4 @@ Changes:
 - **冲突处理**：用户请求与宪法冲突时，MUST 停止并说明违反的原则，提出合规替代方案，须用户显式确认方可覆盖。
 - **所有 PR / 审查 MUST 验证合规**。
 
-**版本**: 1.3.0 | **批准日期**: 2026-07-06 | **最后修订**: 2026-09-27
+**版本**: 1.3.1 | **批准日期**: 2026-07-06 | **最后修订**: 2026-09-27

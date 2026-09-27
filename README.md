@@ -67,9 +67,12 @@ npm run deploy
 
 ```
 src/
+├── main.jsx                    # webview 入口（挂载 React 根）
+├── main.css                    # 全局样式（含暗色模式基础变量）
 ├── App.jsx                     # 根组件
 ├── App.test.jsx                # 根组件测试（进入动作透传）
-├── main-page/                   # 主界面 + 设置面板
+├── plugin-manifest.test.js     # plugin.json 契约守护（匹配区间 / exclude 与关键词不重叠 / tools 声明）
+├── main-page/                  # 主界面 + 设置面板
 ├── prompt-template/            # 7 板块提示词模板
 ├── ai-call/                    # AI 调用封装（流式）
 ├── markdown-view/              # Markdown 富文本渲染
@@ -80,7 +83,7 @@ src/
 ├── history-view/               # 查词历史 UI（搜索、时间筛选、单词卡片、详情）
 ├── word-audio/                 # 英文单词朗读 Hook（SpeechSynthesis，主界面与历史共用）
 ├── mcp-tools/                  # MCP 工具 handler
-├── sync/                       # flomo 同步（数据层 + useFlomoSync Hook）
+├── sync/                       # flomo 同步（index.js 数据层 + useFlomoSync.js Hook）
 assets/
 ├── logo/                       # 插件 Logo 源文件
 ├── flomo_favicon.ico           # flomo 同步按钮图标
@@ -113,6 +116,7 @@ docs/                           # uTools 平台笔记、PRD、agent 工具说明
 | `CONTEXT.md` | 领域术语与边界 |
 | `docs/utools-platform.md` | uTools 平台契约与实测取证（指令注册、`over` / `regex`、关键词重叠） |
 | `docs/agents/` | issue-tracker / triage-labels / domain / code-review-graph |
+| `docs/prd-*.md` | 产品需求文档（v0.6 主功能 / v0.7 MCP 工具 / 历史 Issue 切片） |
 | `.codexspec/memory/constitution.md` | 项目宪法（最高权威） |
 | `releases/` | 版本发布说明与插件介绍 |
 
