@@ -11,7 +11,7 @@ React + Vite 工程，在 uTools 平台中运行的桌面插件。用户输入�
 npm run dev      # 启动开发服务器 (localhost:5173) — 只提供前端代码，不注册指令
 npm run build    # 生产构建到 dist/
 npm run deploy   # 构建 + 复制产物到 public/（uTools 应用商店打包用）
-npm test         # 运行 149 个测试 (vitest)
+npm test         # 运行 154 个测试 (vitest)
 ```
 
 > **⚠️ 改了 `public/plugin.json` 后：在 uTools 开发者工具中「卸载（开发模式）」再重新安装**
@@ -133,6 +133,8 @@ public/preload/
 - **MCP 工具**：通过 `utools.registerTool('explain_word', handler)` 在 preload 中注册，handler 流式调用 AI + 每 2s 线性进度上报（15s 上限）
 - **AI 调用**：流式模式 (`utools.ai(option, streamCallback)`)，边接收边渲染
 - **存储**：`utools.dbStorage` (key-value，模型偏好 `preferredModel` + 保存查词历史开关 `saveQueryHistory` + flomo 端点 `flomoApiEndpoint` + flomo 标签 `flomoTags`) + `utools.db` (文档型，查词历史)
+  - **⚠️ 性能红线**：`utools.dbStorage.getItem()` 是**同步 IPC**（`ipcRenderer.sendSync` 配对），读取期间**渲染进程完全阻塞**。契约：① 禁止在 render 期 / mount 期**批量**读取；② 同一 key 每次挂载**只读一次**（用 ref 复用，勿在多处重复读）；③ 仅子页面使用的数据 MUST **延迟到进入该页面**时再加载 —— 当前 `allAiModels()`（内含**全库前缀扫描** + 远程 `/model/list` 请求）与 `flomoTags` 均只在设置页使用，因此已下放到设置页加载
+  - **⚠️ 匹配指令路径的敏感性**：经匹配指令（`over` 型）进入时，上述启动期开销全部落在「进入之后」的感知窗口内，而手动进入再点查询则无感（开销被算进「插件打开」阶段）。因此**启动路径上的任何额外 IO/请求都会被用户直接感知为「进去后卡住」**
 - **渲染**：自定义 markdown 解析器，支持 3 层嵌套列表
 
 ## 分支规则（红线）
